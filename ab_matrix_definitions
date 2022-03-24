@@ -53,6 +53,7 @@ SELECT 'de','vhpPages','Localization v1','V-DE-LocalizedVHPv5-C','Control VHP','
 SELECT 'de','vhpPages','Localization v1','V-DE-LocalizedVHPv6-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Two button choice','Control' UNION
 
 SELECT 'de','vhpPages','Localization v3','V-DE-LocalizedVHPv7-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner','Control' UNION
+SELECT 'de','vhpPages','Localization v3','V-DE-LocalizedVHPv8-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner (Higher Up)','' UNION
 
 SELECT 'uk','vhpPages','Localization v1','V-UK-LocalizedVHPv1-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Localized VHP with Vertical links sending visitors directly to the enrollment flow','' UNION
 SELECT 'uk','vhpPages','Localization v1','V-UK-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
@@ -74,6 +75,7 @@ SELECT 'de','mobileVhpPages','Localization v1','V-DE-LocalizedVHPv5-C','Control 
 SELECT 'de','mobileVhpPages','Localization v2','V-DE-LocalizedVHPv6-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Two button choice','Control' UNION
 
 SELECT 'de','mobileVhpPages','Localization v3','V-DE-LocalizedVHPv7-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner','Control' UNION
+SELECT 'de','mobileVhpPages','Localization v3','V-DE-LocalizedVHPv8-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner (Higher Up)','' UNION
 
 SELECT 'uk','mobileVhpPages','Localization v1','V-UK-LocalizedVHPv1-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Localized VHP with Vertical links sending visitors directly to the enrollment flow','' UNION
 SELECT 'uk','mobileVhpPages','Localization v1','V-UK-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
