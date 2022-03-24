@@ -52,7 +52,7 @@ SELECT 'de','vhpPages','Localization v1','V-DE-LocalizedVHPv5-C','Control VHP','
 SELECT 'de','vhpPages','Localization v1','V-DE-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
 SELECT 'de','vhpPages','Localization v1','V-DE-LocalizedVHPv6-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Two button choice','Control' UNION
 
-SELECT 'de','vhpPages','Localization v3','V-DE-LocalizedVHPv7-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner','' UNION
+SELECT 'de','vhpPages','Localization v3','V-DE-LocalizedVHPv7-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner','Control' UNION
 
 SELECT 'uk','vhpPages','Localization v1','V-UK-LocalizedVHPv1-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Localized VHP with Vertical links sending visitors directly to the enrollment flow','' UNION
 SELECT 'uk','vhpPages','Localization v1','V-UK-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
@@ -73,7 +73,7 @@ SELECT 'de','mobileVhpPages','Localization v1','V-DE-LocalizedVHPv1-C','Control 
 SELECT 'de','mobileVhpPages','Localization v1','V-DE-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
 SELECT 'de','mobileVhpPages','Localization v2','V-DE-LocalizedVHPv6-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Two button choice','Control' UNION
 
-SELECT 'de','mobileVhpPages','Localization v3','V-DE-LocalizedVHPv7-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner','' UNION
+SELECT 'de','mobileVhpPages','Localization v3','V-DE-LocalizedVHPv7-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: TrustPilot Banner','Control' UNION
 
 SELECT 'uk','mobileVhpPages','Localization v1','V-UK-LocalizedVHPv1-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Localized VHP with Vertical links sending visitors directly to the enrollment flow','' UNION
 SELECT 'uk','mobileVhpPages','Localization v1','V-UK-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
@@ -95,9 +95,12 @@ SELECT 'dk','searchAndSuggestAlerts','SearchSuggestV1','P-DK-SearchSuggestV1-C',
 SELECT 'at','searchAndSuggestAlerts','SearchSuggestV1','P-AT-SearchSuggestV1-C','Control','Test','','' UNION
 SELECT 'ch','searchAndSuggestAlerts','SearchSuggestV1','P-CH-SearchSuggestV1-C','Control','Test','','' UNION
 
-SELECT 'uk','bravoNavigation','Iteration 1','S-UK-BravoNavigationV1-C','Control','Test','','' UNION
-SELECT 'de','bravoNavigation','Iteration 1','S-DE-BravoNavigationV1-C','Control','Test','','' UNION
-SELECT 'at','bravoNavigation','Iteration 1','S-AT-BravoNavigationV1-C','Control','Test','',''
+SELECT 'dk','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','' UNION
+SELECT 'at','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','' UNION
+
+SELECT 'uk','bravoNavigation','Iteration 1','S-UK-BravoNavigationV1-C','Control','Test','','Control' UNION
+SELECT 'de','bravoNavigation','Iteration 1','S-DE-BravoNavigationV1-C','Control','Test','','Control' UNION
+SELECT 'at','bravoNavigation','Iteration 1','S-AT-BravoNavigationV1-C','Control','Test','','Control'
 -- </query>	
 ;
 commit;
