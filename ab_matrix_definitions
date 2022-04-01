@@ -93,6 +93,10 @@ SELECT 'dk','firebird-verifications-page-ab','Firebird Verfication V1','P-firebi
 SELECT 'au','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','Control' UNION
 SELECT 'de','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
 
+SELECT 'de','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
+SELECT 'ca','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
+SELECT 'ch','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
+
 SELECT 'dk','searchAndSuggestAlerts','SearchSuggestV1','P-DK-SearchSuggestV1-C','Control','Test','','' UNION
 SELECT 'at','searchAndSuggestAlerts','SearchSuggestV1','P-AT-SearchSuggestV1-C','Control','Test','','' UNION
 SELECT 'ch','searchAndSuggestAlerts','SearchSuggestV1','P-CH-SearchSuggestV1-C','Control','Test','','' UNION
