@@ -1,3 +1,4 @@
+
 /*------------------*/
 /*   Create VIEW    */
 /*------------------*/
@@ -162,13 +163,53 @@ from (
     from intl.hive_testcell_assignment tcc
       join intl.hive_testcell_assignment tct on tct.countrycode = tcc.countrycode and tct.testname = tcc.testname and tct.cellname like '%-T' 
         and tct.cellname = concat(substr(tcc.cellname, 0, length(tcc.cellname)-1),'-T')
-        and tct.year >= 2021 and tct.testname = 'searchAndSuggestAlerts'
-    where tcc.cellname like '%-C' and tcc.year >= 2021 and tcc.testname = 'searchAndSuggestAlerts' 
+        and tct.year >= 2022 and tct.testname = 'searchAndSuggestAlerts'
+    where tcc.cellname like '%-C' and tcc.year >= 2022 and tcc.testname = 'searchAndSuggestAlerts' 
     group by 1,2,3,4
   ) t
 
+  UNION
+  
+  /*------------------*/
+  /* Great Start Page */
+  /*------------------*/
+  select t.countrycode, t.testname, substr(controlCellName, 1, 1) as target, t.controlCellName, t.testCellName
+    ,case when t.startDateControl > t.startDateTest then t.startDateControl else t.startDateTest end as startdate
+    ,case when t.endDateControl > t.endDateTest then t.endDateTest else t.endDateControl end as enddate
+  from (
+    select tcc.countrycode, tcc.testname, tcc.cellname as controlCellName, tct.cellname as testCellName
+      ,min(tcc.assigneddate) startDateControl, max(tcc.assigneddate) as endDateControl
+      ,min(tct.assigneddate) as startDateTest, max(tct.assigneddate) as endDateTest
+    from intl.hive_testcell_assignment tcc
+      join intl.hive_testcell_assignment tct on tct.countrycode = tcc.countrycode and tct.testname = tcc.testname and tct.cellname like '%-T' 
+        and tct.cellname = concat(substr(tcc.cellname, 0, length(tcc.cellname)-1),'-T')
+        and tct.year >= 2022 and tct.testname = 'firebird-onboarding-great-start-page-ab'
+    where tcc.cellname like '%-C' and tcc.year >= 2022 and tcc.testname = 'firebird-onboarding-great-start-page-ab' 
+    group by 1,2,3,4
+  ) t
+  
+
+  UNION
+  
+  /*------------------*/
+  /* AutoApp Unmasking */
+  /*------------------*/
+  select t.countrycode, t.testname, substr(controlCellName, 1, 1) as target, t.controlCellName, t.testCellName
+    ,case when t.startDateControl > t.startDateTest then t.startDateControl else t.startDateTest end as startdate
+    ,case when t.endDateControl > t.endDateTest then t.endDateTest else t.endDateControl end as enddate
+  from (
+    select tcc.countrycode, tcc.testname, tcc.cellname as controlCellName, tct.cellname as testCellName
+      ,min(tcc.assigneddate) startDateControl, max(tcc.assigneddate) as endDateControl
+      ,min(tct.assigneddate) as startDateTest, max(tct.assigneddate) as endDateTest
+    from intl.hive_testcell_assignment tcc
+      join intl.hive_testcell_assignment tct on tct.countrycode = tcc.countrycode and tct.testname = tcc.testname and tct.cellname like '%-T' 
+        and tct.cellname = concat(substr(tcc.cellname, 0, length(tcc.cellname)-1),'-T')
+        and tct.year >= 2022 and tct.testname = 'monolith-unmasked-auto-app-ab'
+    where tcc.cellname like '%-C' and tcc.year >= 2022 and tcc.testname = 'monolith-unmasked-auto-app-ab' 
+    group by 1,2,3,4
+  ) t
  
- UNION
+  UNION
 
   /*------------------*/
   /*  bravoNavigation */
@@ -248,3 +289,7 @@ from (
 -- </query>
 ;
 grant SELECT on analytics.vw_INTL_AB_Matrix to reporting_ro, analytics_team;
+
+
+select * from analytics.vw_INTL_AB_Matrix 
+
