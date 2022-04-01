@@ -81,16 +81,16 @@ SELECT 'uk','mobileVhpPages','Localization v1','V-UK-LocalizedVHPv1-C','Control 
 SELECT 'uk','mobileVhpPages','Localization v1','V-UK-LocalizedVHPv5-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Photo versus illustration','Control' UNION
 SELECT 'uk','mobileVhpPages','Localization v2','V-UK-LocalizedVHPv6-C','Control VHP','Localized VHP',' - Control: Control VHP.. - Test: Two button choice','' UNION
 
-SELECT 'at','providerProfileVisibility','Profile Visibility V1','P-AT-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
-SELECT 'au','providerProfileVisibility','Profile Visibility V1','P-AU-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
-SELECT 'ca','providerProfileVisibility','Profile Visibility V1','P-CA-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
-SELECT 'de','providerProfileVisibility','Profile Visibility V1','P-DE-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
-SELECT 'ie','providerProfileVisibility','Profile Visibility V1','P-IE-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
-SELECT 'nz','providerProfileVisibility','Profile Visibility V1','P-NZ-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
-SELECT 'uk','providerProfileVisibility','Profile Visibility V1','P-UK-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','' UNION
+SELECT 'at','providerProfileVisibility','Profile Visibility V1','P-AT-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
+SELECT 'au','providerProfileVisibility','Profile Visibility V1','P-AU-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
+SELECT 'ca','providerProfileVisibility','Profile Visibility V1','P-CA-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
+SELECT 'de','providerProfileVisibility','Profile Visibility V1','P-DE-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
+SELECT 'ie','providerProfileVisibility','Profile Visibility V1','P-IE-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
+SELECT 'nz','providerProfileVisibility','Profile Visibility V1','P-NZ-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
+SELECT 'uk','providerProfileVisibility','Profile Visibility V1','P-UK-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
 
 SELECT 'dk','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
-SELECT 'au','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','Control' UNION
+SELECT 'au','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
 SELECT 'de','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
 
 SELECT 'de','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
