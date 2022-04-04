@@ -89,9 +89,9 @@ SELECT 'ie','providerProfileVisibility','Profile Visibility V1','P-IE-ProfileVis
 SELECT 'nz','providerProfileVisibility','Profile Visibility V1','P-NZ-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
 SELECT 'uk','providerProfileVisibility','Profile Visibility V1','P-UK-ProfileVisibilityV1-C','Control','Test','- Control: Cant view own profile - Test: Can view own profile','Test' UNION
 
-SELECT 'dk','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
-SELECT 'au','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
-SELECT 'de','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','' UNION
+SELECT 'dk','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','Control' UNION
+SELECT 'au','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','Control' UNION
+SELECT 'de','firebird-verifications-page-ab','Firebird Verfication V1','P-firebird-verifications-page-ab-C','Control','Test','- Control: Current verification page - Test: Firebird verification page','Control' UNION
 
 SELECT 'de','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
 SELECT 'ca','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
