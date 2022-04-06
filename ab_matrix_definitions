@@ -101,8 +101,8 @@ SELECT 'dk','searchAndSuggestAlerts','SearchSuggestV1','P-DK-SearchSuggestV1-C',
 SELECT 'at','searchAndSuggestAlerts','SearchSuggestV1','P-AT-SearchSuggestV1-C','Control','Test','','Control' UNION
 SELECT 'ch','searchAndSuggestAlerts','SearchSuggestV1','P-CH-SearchSuggestV1-C','Control','Test','','Control' UNION
 
-SELECT 'dk','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','' UNION
-SELECT 'at','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','' UNION
+SELECT 'dk','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','Control' UNION
+SELECT 'at','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','Control' UNION
 
 SELECT 'uk','bravoNavigation','Iteration 1','S-UK-BravoNavigationV1-C','Control','Test','','Control' UNION
 SELECT 'de','bravoNavigation','Iteration 1','S-DE-BravoNavigationV1-C','Control','Test','','Control' UNION
