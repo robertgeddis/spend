@@ -97,9 +97,9 @@ SELECT 'de','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-m
 SELECT 'ca','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
 SELECT 'ch','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
 
-SELECT 'dk','searchAndSuggestAlerts','SearchSuggestV1','P-DK-SearchSuggestV1-C','Control','Test','','' UNION
-SELECT 'at','searchAndSuggestAlerts','SearchSuggestV1','P-AT-SearchSuggestV1-C','Control','Test','','' UNION
-SELECT 'ch','searchAndSuggestAlerts','SearchSuggestV1','P-CH-SearchSuggestV1-C','Control','Test','','' UNION
+SELECT 'dk','searchAndSuggestAlerts','SearchSuggestV1','P-DK-SearchSuggestV1-C','Control','Test','','Control' UNION
+SELECT 'at','searchAndSuggestAlerts','SearchSuggestV1','P-AT-SearchSuggestV1-C','Control','Test','','Control' UNION
+SELECT 'ch','searchAndSuggestAlerts','SearchSuggestV1','P-CH-SearchSuggestV1-C','Control','Test','','Control' UNION
 
 SELECT 'dk','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','' UNION
 SELECT 'at','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','' UNION
