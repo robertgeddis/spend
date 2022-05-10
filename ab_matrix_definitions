@@ -104,6 +104,8 @@ SELECT 'ch','searchAndSuggestAlerts','SearchSuggestV1','P-CH-SearchSuggestV1-C',
 SELECT 'dk','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','Control' UNION
 SELECT 'at','firebird-onboarding-great-start-page-ab','GreatStartV1','P-firebird-onboarding-great-start-page-ab-C','Control','Test','','Control' UNION
 
+SELECT 'de','monolith-new-banner-headline-ab','UrgencyBanner','V-monolith-new-banner-headline-ab-C','Control','Test','- Control: Current urgency banner (buttons black) - Test: Urgency buttons in navy','' UNION
+
 SELECT 'uk','bravoNavigation','Iteration 1','S-UK-BravoNavigationV1-C','Control','Test','','Control' UNION
 SELECT 'de','bravoNavigation','Iteration 1','S-DE-BravoNavigationV1-C','Control','Test','','Control' UNION
 SELECT 'at','bravoNavigation','Iteration 1','S-AT-BravoNavigationV1-C','Control','Test','','Control'
@@ -112,4 +114,3 @@ SELECT 'at','bravoNavigation','Iteration 1','S-AT-BravoNavigationV1-C','Control'
 commit;
 
 select * from analytics_prod.INTL_AB_Matrix_Definitions;
-
