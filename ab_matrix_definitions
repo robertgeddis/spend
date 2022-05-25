@@ -96,6 +96,7 @@ SELECT 'de','firebird-verifications-page-ab','Firebird Verfication V1','P-firebi
 SELECT 'de','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
 SELECT 'ca','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
 SELECT 'ch','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
+SELECT 'uk','monolith-unmasked-auto-app-ab','monolith-unmasked-auto-app-ab','S-monolith-unmasked-auto-app-ab-C','Control','Test','- Control: Current inbox view - Test: Unmasking AutoApps','' UNION
 
 SELECT 'dk','searchAndSuggestAlerts','SearchSuggestV1','P-DK-SearchSuggestV1-C','Control','Test','','Control' UNION
 SELECT 'at','searchAndSuggestAlerts','SearchSuggestV1','P-AT-SearchSuggestV1-C','Control','Test','','Control' UNION
@@ -114,3 +115,4 @@ SELECT 'at','bravoNavigation','Iteration 1','S-AT-BravoNavigationV1-C','Control'
 commit;
 
 select * from analytics_prod.INTL_AB_Matrix_Definitions;
+
