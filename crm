@@ -153,6 +153,30 @@ INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (12,'',8,'Test');
 INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (12,'',9,'Test');
 INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (12,'',0,'Control');
 
+--Seeker Welcome Email Redesign 07.02.2023 (ADI-9558)
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',1,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',2,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',3,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',4,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',5,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',6,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',7,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',8,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',9,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (13,'',0,'Control');
+
+--Provider Welcome Email Redesign 07.02.2023 (ADI-9558)
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',1,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',2,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',3,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',4,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',5,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',6,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',7,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',8,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',9,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (14,'',0,'Control');
+
 GRANT ALL on analytics_prod.INTL_AB_CRM_Cell_Config to reporting_ro, analytics_team WITH GRANT OPTION;
 
 select * from analytics_prod.INTL_AB_CRM_Cell_Config order by 1,2,3,4;
@@ -168,13 +192,13 @@ CREATE TABLE analytics_prod.INTL_AB_CRM_Performance (
   ,campaign_name VARCHAR(500)
 );
 --Provider Welcome Stream Test
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'202109_Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_AppForJobs');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'202109_Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_CompleteYourProfile preview	202109_Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_CompleteYourProfile');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_UploadAPhoto_Claim');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_goPremium');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2099-12-31',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_UnreadMessage');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'202109_Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_AppForJobs');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'202109_Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_CompleteYourProfile preview	202109_Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_CompleteYourProfile');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_UploadAPhoto_Claim');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_goPremium');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-09-30','2021-10-18',1,'Provider Welcome Stream Test',0,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_UnreadMessage');
 --Test - 19-20 Oct 2021
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-10-18','2021-10-25',2,'Test - 19-20 Oct 2021',3007320,'20211019_Email_Blast_B2C_Provider_Basic_AllV_Promo_GoPremium20_Launch');
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2021-10-18','2021-10-25',2,'Test - 19-20 Oct 2021',3010669,'20211019_Email_Blast_B2C_Provider_Basic_AllV_Promo_GoPremium20_Launch');
@@ -216,10 +240,26 @@ INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2022-03-0
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-11-16','2022-11-24',11,'Providers Near You',5541773,'Transactional-Email_ProviderNearYou');
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-11-16','2022-11-24',11,'Providers Near You',5541451,'Transactional-Email_ProviderNearYou');
 --Providers Near You / Welcome Stream Test 01.12.2022 (ADI-9066)
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2099-12-31',12,'Providers Near You / Welcome Stream',1598851,'Email_Trigger_Onboarding_B2C_Seeker_Basic_AllV_Promo');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2099-12-31',12,'Providers Near You / Welcome Stream',5541451,'Transactional-Email_ProviderNearYou');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2099-12-31',12,'Providers Near You / Welcome Stream',2044650,'Transactional-Email_ProviderNearYou');
-INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2099-12-31',12,'Providers Near You / Welcome Stream',5652114,'Email_Trigger_Onboarding_B2C_Seeker_Basic_AllV_Test_Promo');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2023-01-13',12,'Providers Near You / Welcome Stream',1598851,'Email_Trigger_Onboarding_B2C_Seeker_Basic_AllV_Promo');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2023-01-13',12,'Providers Near You / Welcome Stream',5541451,'Transactional-Email_ProviderNearYou');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2023-01-13',12,'Providers Near You / Welcome Stream',2044650,'Transactional-Email_ProviderNearYou');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2022-12-01','2023-01-13',12,'Providers Near You / Welcome Stream',5652114,'Email_Trigger_Onboarding_B2C_Seeker_Basic_AllV_Test_Promo');
+
+--Seeker Welcome Email Redesign 07.02.2023 (ADI-9558)
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2023-02-07','2023-03-01',13,'Seeker Welcome Email Redesign',1338991,'Email_Trigger_Onboarding_B2C_Seeker_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2023-02-07','2023-03-01',13,'Seeker Welcome Email Redesign',1329089,'Email_Trigger_Onboarding_B2C_Seeker_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2023-02-07','2023-03-01',13,'Seeker Welcome Email Redesign',1328663,'Email_Trigger_Onboarding_B2C_Seeker_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2023-02-07','2023-03-01',13,'Seeker Welcome Email Redesign',6109596,'202301_Email_Trigger_Onboarding_B2C_Seeker/Provider_Basic/Premium_AllV_Welcome_M1');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2023-02-07','2023-03-01',13,'Seeker Welcome Email Redesign',6109879,'202301_Email_Trigger_Onboarding_B2C_Seeker/Provider_Basic/Premium_AllV_Welcome_M1');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('seeker','2023-02-07','2023-03-01',13,'Seeker Welcome Email Redesign',6109892,'202301_Email_Trigger_Onboarding_B2C_Seeker/Provider_Basic/Premium_AllV_Welcome_M1');
+
+--Provider Welcome Email Redesign 07.02.2023 (ADI-9558)
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-02-07','2099-12-31',14,'Provider Welcome Email Redesign',1338992,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-02-07','2099-12-31',14,'Provider Welcome Email Redesign',1329090,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-02-07','2099-12-31',14,'Provider Welcome Email Redesign',1328668,'Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-02-07','2099-12-31',14,'Provider Welcome Email Redesign',6112628,'202301_Email_Trigger_Onboarding_B2C_Seeker/Provider_Basic/Premium_AllV_Welcome_M1');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-02-07','2099-12-31',14,'Provider Welcome Email Redesign',6112723,'202301_Email_Trigger_Onboarding_B2C_Seeker/Provider_Basic/Premium_AllV_Welcome_M1');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-02-07','2099-12-31',14,'Provider Welcome Email Redesign',6112881,'202301_Email_Trigger_Onboarding_B2C_Seeker/Provider_Basic/Premium_AllV_Welcome_M1');
 
 GRANT ALL on analytics_prod.INTL_AB_CRM_Performance to reporting_ro, analytics_team WITH GRANT OPTION;
 
