@@ -189,6 +189,18 @@ INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (15,'',8,'Test');
 INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (15,'',9,'Test');
 INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (15,'',0,'Control');
 
+--New Provider Toolkit Email 02.05.2023 (ADI-10152)
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',1,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',2,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',3,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',4,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',5,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',6,'Control');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',7,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',8,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',9,'Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Cell_Config VALUES (16,'',0,'Control');
+
 GRANT ALL on analytics_prod.INTL_AB_CRM_Cell_Config to reporting_ro, analytics_team WITH GRANT OPTION;
 
 select * from analytics_prod.INTL_AB_CRM_Cell_Config order by 1,2,3,4;
@@ -280,6 +292,14 @@ INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-03-3
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-03-31','2023-04-21',15,'New Provider Welcome Email',6508203,'202303_Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome_M1');
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-03-31','2023-04-21',15,'New Provider Welcome Email',6508268,'202303_Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome_M1');
 INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-03-31','2023-04-21',15,'New Provider Welcome Email',6508284,'202303_Email_Trigger_Onboarding_B2C_Provider_Basic/Premium_AllV_Welcome_M1');
+
+--New Provider Toolkit Email 02.05.2023 (ADI-10152)
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-05-02','2050-01-01',16,'New Provider Toolkit Email',1598780,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-05-02','2050-01-01',16,'New Provider Toolkit Email',1584066,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-05-02','2050-01-01',16,'New Provider Toolkit Email',1598383,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-05-02','2050-01-01',16,'New Provider Toolkit Email',6714258,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit_Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-05-02','2050-01-01',16,'New Provider Toolkit Email',6714335,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit_Test');
+INSERT INTO analytics_prod.INTL_AB_CRM_Performance VALUES ('provider','2023-05-02','2050-01-01',16,'New Provider Toolkit Email',6714358,'Email_Trigger_Onboarding_B2C_Provider_Basic_AllV_Toolkit_Test');
 
 GRANT ALL on analytics_prod.INTL_AB_CRM_Performance to reporting_ro, analytics_team WITH GRANT OPTION;
 
