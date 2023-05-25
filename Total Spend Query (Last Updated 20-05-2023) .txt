@@ -1,0 +1,637 @@
+with spend as (
+
+-- SEM 
+  select distinct
+     d.year, d.month, d.week_start_date, d.date,  
+     initcap(sem.campaign_type) as role, 'SEM' as spend_category, case when vertical = 'Brand' then 'SEM Brand' else 'SEM Non-brand' end as source, 
+     'intl.dw_f_campaign_spend_intl' as spend_table,
+     upper(country) as country, sem.currency,
+     sum(sem.cost) as spend_domestic_currency
+  from intl.dw_f_campaign_spend_intl sem
+    join reporting.DW_D_DATE d on date(sem.date) = d.date
+  where d.year >= 2019  
+    and sem.country is not null
+  group by 1,2,3,4,5,6,7,8,9,10 
+  
+union
+
+-- FACEBOOK
+  select distinct
+    d.year, d.month, d.week_start_date, d.date,
+    initcap(campaign_Type) as role, 'Social' as spend_category, 'Facebook' as source, 'intl.DW_F_FACEBOOK_SPEND_INTL' as spend_table,
+    case when upper(country) = 'EN' then 'CA' 
+         when upper(country) = '_'  then 'AU' 
+         when upper(country) = 'VE'  then 'DE' 
+      else upper(country) end as country, 
+    fb.currency,
+    ifnull(sum(spend),0) as spend_domestic_currency
+  from intl.DW_F_FACEBOOK_SPEND_INTL fb
+    join reporting.DW_D_DATE d on date(date_start) = d.date
+  where d.year >= 2019  
+  group by 1,2,3,4,5,6,7,8,9,10
+  
+union
+
+-- QUALITY CLICK
+  select distinct
+    year, month, week_start_date, date,
+    role, spend_category, source, spend_table,
+    country, currency,
+    sum(case when role = 'Seeker' then commission
+             when role = 'Provider' then commission + spend end) as spend_domestic_currency
+  from 
+      (select distinct
+        d.year, d.month, d.week_start_date, d.date,
+        case when (lower(product) not like '%alltagshelfer%' and lower(product) not like '%provider%') then 'Seeker'
+             else 'Provider' end as role,
+       'Other Online' as spend_category, 'Quality Click' as source, 'intl.quality_click_spend' as spend_table,      
+        case when program in ('DE', 'AT', 'CH') then program
+              when product like '%FR%' then 'FR'
+              when product like '%BE_nl%' then 'BE'  
+              when product like '%BE_fr%' then 'FB'  
+              when product like '%DK%' then 'DK'  
+              when product like '%FI%' then 'FI'  
+              when product like '%NL%' then 'NL'  
+              when product like '%SE%' then 'SE'  
+              when product like '%IE%' then 'IE'  
+              when product like '%ES%' then 'ES'  
+              when product like '%AU%' then 'AU'  
+              when product like '%NO%' then 'NO'
+              when product like '%NZ%' then 'NZ'
+              when product like '%UK%' then 'UK'
+              when product like '%CA%' then 'CA'
+         end as country, 
+        'EUR' as currency,
+         sum(qc.commission) as commission,
+  			 sum(qc.currency) as spend
+      from intl.quality_click_spend qc
+        join reporting.DW_D_DATE d on date(day) = d.date
+      where partnerid<>435
+        and lower(product) <> 'default'
+        and d.year>=year(now())
+      group by 1,2,3,4,5,6,7,8,9,10) qc
+  group by 1,2,3,4,5,6,7,8,9,10
+
+union
+
+-- AWIN
+  select distinct
+    d.year, d.month, d.week_start_date, d.date,
+    case when aw.commission_group_code in ('REG_P','REGP') then 'Provider' else 'Seeker' end as role,
+    'Other Online' as spend_category, 'Awin' as source, 'intl.awin_spend' as spend_table, 
+    case when aw.commission_group_code in ('REG_S','PREMIUM-1_MONAT','PREMIUM-3-MONATE','PREMIUM-12-MONAT') or countrycode in ('DE','') then 'DE'
+  		   else 'AT' end as country,
+  	'EUR' as currency,	   
+    ifnull((sum(aw.commission_amount)*1.3),0) as spend_domestic_currency
+  from intl.awin_spend aw
+    join reporting.DW_D_DATE d on date(aw.transaction_Date) = d.date
+  where d.year >= year(now())
+	group by 1,2,3,4,5,6,7,8,9,10
+	
+union
+
+-- Meinestadt (Seekers + DE Only)
+  select distinct
+     d.year, d.month, d.week_start_date, d.date,
+     'Seeker' as role, 'Other Online' as spend_category, 'Meinestadt' as source, 'Query' as spend_table,
+     'DE' as country, 'EUR' as currency,
+     sum(case when spend.year = spend.current_year and spend.month = spend.current_month then ((spend)/current_days) else ((spend)/days_in_month) end) as spend_domestic_currency
+  from (
+    select distinct
+      year(sp.subscriptionDateCreated) as year,
+      month(sp.subscriptionDateCreated) as month,
+      date_part('day', last_day(sp.subscriptionDateCreated)) as days_in_month,
+      date_part('day', current_date()-1) as current_days,
+      month(current_date()-1) as current_month,
+      year(current_date()-1) as current_year,
+      count(distinct sp.subscriptionId) as premiums,
+      case when count(distinct sp.subscriptionId)<=150 then (count(distinct sp.subscriptionId)*80) 
+        when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
+    from intl.transaction t
+      join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
+        and year(sp.subscriptionDateCreated) >= year(current_date()) and date(sp.subscriptionDateCreated) < current_date()
+      join intl.hive_member m on t.member_id = m.memberid and t.country_code = sp.countrycode and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated)
+        and m.IsInternalAccount is not true
+        and lower(m.role) = 'seeker' and lower(m.audience) = 'seeker'
+        and lower(m.campaign) = 'online' and lower(m.site) = 'meinestadt.de' 
+    where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
+      and t.country_code = 'de'      
+      and year(t.date_created) >= 2023 and date(t.date_created) < current_date()
+    group by 1,2,3,4,5,6
+  ) spend
+    join reporting.DW_D_DATE d on spend.year = d.year and spend.month = d.month and d.date < current_date()
+    group by 1,2,3,4,5,6,7,8,9,10 
+      
+union   
+
+-- Pinterest (Seekers Only)
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Social' as spend_category, 'Pinterest' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency, sum(DE_Seeker_Pinterest) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Social' as spend_category, 'Pinterest' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_Seeker_Pinterest) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Social' as spend_category, 'Pinterest' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CA' as country, 'EUR' as currency, sum(CA_Seeker_Pinterest) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Social' as spend_category, 'Pinterest' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_Seeker_Pinterest) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+
+union
+
+-- TV (Seekers + DE Only)
+  select distinct
+    d.year, d.month, d.week_start_date, d.date, 
+    'Seeker' as role, 'TV' as spend_category, 'TV' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table,
+    'DE' as country, 'EUR' as currency,
+    sum(DE_TV) as spend_domestic_currency
+  from intl.DW_MARKETING_SPEND_INTL
+    join reporting.DW_D_DATE d on date(spend_date) = d.date
+  where d.year >= 2019
+  group by 1,2,3,4,5,6,7,8,9,10
+  
+union
+
+-- Various Other Online (Seekers Only)
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AT' as country, 'EUR' as currency, sum(AT_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'BE' as country, 'EUR' as currency, sum(BE_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CA' as country, 'EUR' as currency, sum(CA_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CH' as country, 'EUR' as currency, sum(CH_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct  d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency, sum(DE_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DK' as country, 'EUR' as currency, sum(DK_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'ES' as country, 'EUR' as currency, sum(ES_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FB' as country, 'EUR' as currency, sum(FB_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FI' as country, 'EUR' as currency, sum(FI_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FR' as country, 'EUR' as currency, sum(FR_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'IE' as country, 'EUR' as currency, sum(IE_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NL' as country, 'EUR' as currency, sum(NL_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NO' as country, 'EUR' as currency, sum(NO_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NZ' as country, 'EUR' as currency, sum(NZ_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'SE' as country, 'EUR' as currency, sum(SE_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10 
+          
+union
+
+-- Recruitics (Providers Only)
+  select distinct
+    d.year, d.month, d.week_start_date, d.date, 
+    'Provider' as role, 'Other Online' as spend_category, 'Recruitics' as source, 'intl.recruitics_spend_intl' as spend_table,
+    case when rc.country in ('DE','') then 'DE' 
+         when rc.country = 'GB' then 'UK'
+        else rc.country end as country, 
+    'EUR' as currency,
+    sum(rc.spend) as spend_domestic_currency
+  from intl.recruitics_spend_intl rc
+    join reporting.DW_D_DATE d on date(rc.day) = d.date 
+  where lower(rc.source) not in ('xxx','jobg8','jobg8auto','jobtome')
+    and d.year >= 2023  
+    and date(d.date)<>date(current_date)
+  group by 1,2,3,4,5,6,7,8,9,10 
+
+union
+
+-- Student Job (Providers Only)
+  select distinct
+    year, month, week_start_date, date,
+    role, spend_category, source, spend_table,
+    country, currency,
+    (sum(de_s) + sum(at_s) + sum(ch_s) + sum(fr_s) + sum(be_s) + sum(fb_s) + sum(dk_s) + sum(fi_s) + sum(nl_s) + sum(se_s) + sum(ie_s) + sum(es_s) + sum(au_s) + sum(no_s) + sum(nz_s) + sum(uk_s) + sum(ca_s)) as spend_domestic_currency 
+  from 
+    (select distinct
+        d.year, d.month, d.week_start_date, d.date,
+        'Provider' as role, 'Other Online' as spend_category, 'StudentJob' as source, 'intl.quality_click_spend' as spend_table,
+        case when program in ('DE', 'AT', 'CH') then program
+             when product like '%FR%' then 'FR'
+             when product like '%BE_nl%' then 'BE'  
+             when product like '%BE_fr%' then 'FB'  
+             when product like '%DK%' then 'DK'  
+             when product like '%FI%' then 'FI'  
+             when product like '%NL%' then 'NL'  
+             when product like '%SE%' then 'SE'  
+             when product like '%IE%' then 'IE'  
+             when product like '%ES%' then 'ES'  
+             when product like '%AU%' then 'AU'  
+             when product like '%NO%' then 'NO'
+             when product like '%NZ%' then 'NZ'
+             when product like '%UK%' then 'UK'
+             when product like '%CA%' then 'CA'
+           end as country,
+          'EUR' as currency, 
+        ifnull(sum(case when program='DE' then count end)*2,0) as 'de_s',  
+        ifnull(sum(case when program='AT' then count end)*2,0) as 'at_s',   
+        ifnull(sum(case when program='CH' then count end),0) as 'ch_s', 
+        ifnull(sum(case when product like '%FR%' then count end)*1,0) as 'fr_s',
+        ifnull(sum(case when product like '%BE_nl%' then count end)*1.5,0) as 'be_s',
+        ifnull(sum(case when product like '%BE_fr%' then count end)*1,0) as 'fb_s',
+        ifnull(sum(case when product like '%DK%' then count end),0) as 'dk_s',
+        ifnull(sum(case when product like '%FI%' then count end),0) as 'fi_s',
+        ifnull(sum(case when product like '%NL%' then count end),0) as 'nl_s',
+        ifnull(sum(case when product like '%SE%' then count end)*2,0) as 'se_s',
+        ifnull(sum(case when product like '%IE%' then count end),0) as 'ie_s',
+        ifnull(sum(case when product like '%ES%' then count end)*1,0) as 'es_s',
+        ifnull(sum(case when product like '%AU%' then count end),0) as 'au_s', 
+        ifnull(sum(case when product like '%NO%' then count end),0) as 'no_s',
+        ifnull(sum(case when product like '%NZ%' then count end),0) as 'nz_s',
+        ifnull(sum(case when product like '%UK%' then count end)*1.5,0) as 'uk_s', 
+        ifnull(sum(case when product like '%CA%' then count end),0) as 'ca_s' 
+        from intl.quality_click_spend qc
+          join reporting.DW_D_DATE d on date(day) = d.date     
+        where partnerid = 435
+          and (product like '%Alltagshelfer%' or product like '%Provider%')
+          and d.year >= 2023  
+          and date(d.date) <> date(current_date)
+        group by 1,2,3,4,5,6,7,8,9,10) sj     
+    group by 1,2,3,4,5,6,7,8,9,10 
+
+union 
+
+-- AppJobs (Providers Only)
+  select distinct
+    d.year, d.month, d.week_start_date, d.date,
+    'Provider' as role, 'Other Online' as spend_category, 'AppJobs' as source, 'intl.appjobs_spend' as spend_table,
+    case when country = 'Germany' then 'DE'
+         when country = 'United Kingdom' then 'UK' 
+         when country = 'Canada' then 'CA' 
+       end as country, 
+    'EUR' as currency,
+    sum(total_spent_usd) as spend_domestic_currency           
+  from intl.appjobs_spend aj
+    join reporting.DW_D_DATE d on date(day) = d.date
+  where d.year >= 2023  
+    and date(d.date) <> date(current_date)
+  group by 1,2,3,4,5,6,7,8,9,10 
+  
+union
+
+-- AppCast (Providers DE + UK Only) 
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'AppCast' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency, ifnull(sum(de_provider_appcast),0) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2023  group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'AppCast' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'GBP' as currency, ifnull(sum(uk_provider_appcast),0) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2023 group by 1,2,3,4,5,6,7,8,9,10
+
+union 
+
+-- My Perfet Job (Providers + DE Only)
+  select distinct
+     d.year, d.month, d.week_start_date, d.date,
+    'Provider' as role, 'Other Online' as spend_category, 'MyPerfectJob' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table,
+    'DE' as country, 'EUR' as currency,
+    ifnull(sum(DE_Provider_Myperfectjob),0) as spend_domestic_currency
+  from intl.DW_MARKETING_SPEND_INTL mpj
+    join reporting.DW_D_DATE d on date(mpj.spend_date) = d.date 
+  where d.year >= 2023
+  group by 1,2,3,4,5,6,7,8,9,10
+  
+union
+
+-- Various Other Online (Seekers Only)
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AT' as country, 'EUR' as currency, sum(AT_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019  group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'BE' as country, 'EUR' as currency, sum(BE_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CA' as country, 'EUR' as currency, sum(CA_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CH' as country, 'EUR' as currency, sum(CH_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency, sum(DE_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DK' as country, 'EUR' as currency, sum(DK_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'ES' as country, 'EUR' as currency, sum(ES_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FB' as country, 'EUR' as currency, sum(FB_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FI' as country, 'EUR' as currency, sum(FI_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FR' as country, 'EUR' as currency, sum(FR_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'IE' as country, 'EUR' as currency, sum(IE_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NL' as country, 'EUR' as currency, sum(NL_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NO' as country, 'EUR' as currency, sum(NO_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NZ' as country, 'EUR' as currency, sum(NZ_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'SE' as country, 'EUR' as currency, sum(SE_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Various' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_PROVIDER) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= 2019 group by 1,2,3,4,5,6,7,8,9,10  
+),
+
+fx_rates as (
+select distinct year, month, week_start_date, date, currency,
+  cast(case when year = 2019 and month = 1 and currency = 'EUR' then '1.142001' 
+       when year = 2019 and month = 2 and currency = 'EUR' then '1.135256' 
+       when year = 2019 and month = 3 and currency = 'EUR' then '1.130447' 
+       when year = 2019 and month = 4 and currency = 'EUR' then '1.123398' 
+       when year = 2019 and month = 5 and currency = 'EUR' then '1.119174' 
+       when year = 2019 and month = 6 and currency = 'EUR' then '1.129387' 
+       when year = 2019 and month = 7 and currency = 'EUR' then '1.122470' 
+       when year = 2019 and month = 8 and currency = 'EUR' then '1.113537' 
+       when year = 2019 and month = 9 and currency = 'EUR' then '1.101883' 
+       when year = 2019 and month = 10 and currency = 'EUR' then '1.105189' 
+       when year = 2019 and month = 11 and currency = 'EUR' then '1.105775' 
+       when year = 2019 and month = 12 and currency = 'EUR' then '1.110531'    
+       when year = 2019 and month = 1 and currency = 'GBP' then '1.288994'
+       when year = 2019 and month = 2 and currency = 'GBP' then '1.300115' 
+       when year = 2019 and month = 3 and currency = 'GBP' then '1.317637' 
+       when year = 2019 and month = 4 and currency = 'GBP' then '1.301974' 
+       when year = 2019 and month = 5 and currency = 'GBP' then '1.286667' 
+       when year = 2019 and month = 6 and currency = 'GBP' then '1.267368' 
+       when year = 2019 and month = 7 and currency = 'GBP' then '1.248830' 
+       when year = 2019 and month = 8 and currency = 'GBP' then '1.215095' 
+       when year = 2019 and month = 9 and currency = 'GBP' then '1.234894' 
+       when year = 2019 and month = 10 and currency = 'GBP' then '1.263687' 
+       when year = 2019 and month = 11 and currency = 'GBP' then '1.288205' 
+       when year = 2019 and month = 12 and currency = 'GBP' then '1.309986'   
+       when year = 2019 and month = 1 and currency = 'CAD' then '0.750927'
+       when year = 2019 and month = 2 and currency = 'CAD' then '0.757617' 
+       when year = 2019 and month = 3 and currency = 'CAD' then '0.748595' 
+       when year = 2019 and month = 4 and currency = 'CAD' then '0.747431' 
+       when year = 2019 and month = 5 and currency = 'CAD' then '0.743449' 
+       when year = 2019 and month = 6 and currency = 'CAD' then '0.751666' 
+       when year = 2019 and month = 7 and currency = 'CAD' then '0.763631' 
+       when year = 2019 and month = 8 and currency = 'CAD' then '0.753944' 
+       when year = 2019 and month = 9 and currency = 'CAD' then '0.755178' 
+       when year = 2019 and month = 10 and currency = 'CAD' then '0.758146' 
+       when year = 2019 and month = 11 and currency = 'CAD' then '0.755730' 
+       when year = 2019 and month = 12 and currency = 'CAD' then '0.758842'  
+       when year = 2019 and month = 1 and currency = 'AUD' then '0.714738'
+       when year = 2019 and month = 2 and currency = 'AUD' then '0.715199' 
+       when year = 2019 and month = 3 and currency = 'AUD' then '0.708242' 
+       when year = 2019 and month = 4 and currency = 'AUD' then '0.711371' 
+       when year = 2019 and month = 5 and currency = 'AUD' then '0.694823' 
+       when year = 2019 and month = 6 and currency = 'AUD' then '0.694587' 
+       when year = 2019 and month = 7 and currency = 'AUD' then '0.698681' 
+       when year = 2019 and month = 8 and currency = 'AUD' then '0.677118' 
+       when year = 2019 and month = 9 and currency = 'AUD' then '0.680545' 
+       when year = 2019 and month = 10 and currency = 'AUD' then '0.679502' 
+       when year = 2019 and month = 11 and currency = 'AUD' then '0.683175' 
+       when year = 2019 and month = 12 and currency = 'AUD' then '0.687971'
+
+       when year = 2020 and month = 1 and currency = 'EUR' then '1.110785' 
+       when year = 2020 and month = 2 and currency = 'EUR' then '1.091858' 
+       when year = 2020 and month = 3 and currency = 'EUR' then '1.106977' 
+       when year = 2020 and month = 4 and currency = 'EUR' then '1.087027' 
+       when year = 2020 and month = 5 and currency = 'EUR' then '1.092001' 
+       when year = 2020 and month = 6 and currency = 'EUR' then '1.125007' 
+       when year = 2020 and month = 7 and currency = 'EUR' then '1.143897' 
+       when year = 2020 and month = 8 and currency = 'EUR' then '1.182503' 
+       when year = 2020 and month = 9 and currency = 'EUR' then '1.179359' 
+       when year = 2020 and month = 10 and currency = 'EUR' then '1.176869' 
+       when year = 2020 and month = 11 and currency = 'EUR' then '1.183710' 
+       when year = 2020 and month = 12 and currency = 'EUR' then '1.216292'    
+       when year = 2020 and month = 1 and currency = 'GBP' then '1.307724'
+       when year = 2020 and month = 2 and currency = 'GBP' then '1.298050' 
+       when year = 2020 and month = 3 and currency = 'GBP' then '1.237516' 
+       when year = 2020 and month = 4 and currency = 'GBP' then '1.240702' 
+       when year = 2020 and month = 5 and currency = 'GBP' then '1.230224' 
+       when year = 2020 and month = 6 and currency = 'GBP' then '1.251220' 
+       when year = 2020 and month = 7 and currency = 'GBP' then '1.264336' 
+       when year = 2020 and month = 8 and currency = 'GBP' then '1.312971' 
+       when year = 2020 and month = 9 and currency = 'GBP' then '1.296261' 
+       when year = 2020 and month = 10 and currency = 'GBP' then '1.297643' 
+       when year = 2020 and month = 11 and currency = 'GBP' then '1.320282' 
+       when year = 2020 and month = 12 and currency = 'GBP' then '1.342621'   
+       when year = 2020 and month = 1 and currency = 'CAD' then '0.765073'
+       when year = 2020 and month = 2 and currency = 'CAD' then '0.753163' 
+       when year = 2020 and month = 3 and currency = 'CAD' then '0.719275' 
+       when year = 2020 and month = 4 and currency = 'CAD' then '0.711263' 
+       when year = 2020 and month = 5 and currency = 'CAD' then '0.715260' 
+       when year = 2020 and month = 6 and currency = 'CAD' then '0.737266' 
+       when year = 2020 and month = 7 and currency = 'CAD' then '0.739916' 
+       when year = 2020 and month = 8 and currency = 'CAD' then '0.754634' 
+       when year = 2020 and month = 9 and currency = 'CAD' then '0.757109' 
+       when year = 2020 and month = 10 and currency = 'CAD' then '0.757095' 
+       when year = 2020 and month = 11 and currency = 'CAD' then '0.764002' 
+       when year = 2020 and month = 12 and currency = 'CAD' then '0.780316'  
+       when year = 2020 and month = 1 and currency = 'AUD' then '0.687565'
+       when year = 2020 and month = 2 and currency = 'AUD' then '0.666854' 
+       when year = 2020 and month = 3 and currency = 'AUD' then '0.621566' 
+       when year = 2020 and month = 4 and currency = 'AUD' then '0.628652' 
+       when year = 2020 and month = 5 and currency = 'AUD' then '0.650739' 
+       when year = 2020 and month = 6 and currency = 'AUD' then '0.688715' 
+       when year = 2020 and month = 7 and currency = 'AUD' then '0.701750' 
+       when year = 2020 and month = 8 and currency = 'AUD' then '0.719619' 
+       when year = 2020 and month = 9 and currency = 'AUD' then '0.723144' 
+       when year = 2020 and month = 10 and currency = 'AUD' then '0.713224' 
+       when year = 2020 and month = 11 and currency = 'AUD' then '0.726879' 
+       when year = 2020 and month = 12 and currency = 'AUD' then '0.752729'
+
+       when year = 2021 and month = 1 and currency = 'EUR' then '1.216983' 
+       when year = 2021 and month = 2 and currency = 'EUR' then '1.209595' 
+       when year = 2021 and month = 3 and currency = 'EUR' then '1.191048' 
+       when year = 2021 and month = 4 and currency = 'EUR' then '1.195110' 
+       when year = 2021 and month = 5 and currency = 'EUR' then '1.213948' 
+       when year = 2021 and month = 6 and currency = 'EUR' then '1.204671' 
+       when year = 2021 and month = 7 and currency = 'EUR' then '1.182689' 
+       when year = 2021 and month = 8 and currency = 'EUR' then '1.177138' 
+       when year = 2021 and month = 9 and currency = 'EUR' then '1.177812' 
+       when year = 2021 and month = 10 and currency = 'EUR' then '1.159816' 
+       when year = 2021 and month = 11 and currency = 'EUR' then '1.141091' 
+       when year = 2021 and month = 12 and currency = 'EUR' then '1.130427'    
+       when year = 2021 and month = 1 and currency = 'GBP' then '1.363726'
+       when year = 2021 and month = 2 and currency = 'GBP' then '1.386339' 
+       when year = 2021 and month = 3 and currency = 'GBP' then '1.386344' 
+       when year = 2021 and month = 4 and currency = 'GBP' then '1.383485' 
+       when year = 2021 and month = 5 and currency = 'GBP' then '1.406248' 
+       when year = 2021 and month = 6 and currency = 'GBP' then '1.402428' 
+       when year = 2021 and month = 7 and currency = 'GBP' then '1.381383' 
+       when year = 2021 and month = 8 and currency = 'GBP' then '1.379865' 
+       when year = 2021 and month = 9 and currency = 'GBP' then '1.374971' 
+       when year = 2021 and month = 10 and currency = 'GBP' then '1.367716' 
+       when year = 2021 and month = 11 and currency = 'GBP' then '1.345473' 
+       when year = 2021 and month = 12 and currency = 'GBP' then '1.330073'   
+       when year = 2021 and month = 1 and currency = 'CAD' then '0.785753'
+       when year = 2021 and month = 2 and currency = 'CAD' then '0.787427' 
+       when year = 2021 and month = 3 and currency = 'CAD' then '0.795322' 
+       when year = 2021 and month = 4 and currency = 'CAD' then '0.799204' 
+       when year = 2021 and month = 5 and currency = 'CAD' then '0.824137' 
+       when year = 2021 and month = 6 and currency = 'CAD' then '0.818163' 
+       when year = 2021 and month = 7 and currency = 'CAD' then '0.799464' 
+       when year = 2021 and month = 8 and currency = 'CAD' then '0.793772' 
+       when year = 2021 and month = 9 and currency = 'CAD' then '0.789456' 
+       when year = 2021 and month = 10 and currency = 'CAD' then '0.802972' 
+       when year = 2021 and month = 11 and currency = 'CAD' then '0.795789' 
+       when year = 2021 and month = 12 and currency = 'CAD' then '0.780927'  
+       when year = 2021 and month = 1 and currency = 'AUD' then '0.771799'
+       when year = 2021 and month = 2 and currency = 'AUD' then '0.775183' 
+       when year = 2021 and month = 3 and currency = 'AUD' then '0.770829' 
+       when year = 2021 and month = 4 and currency = 'AUD' then '0.769138' 
+       when year = 2021 and month = 5 and currency = 'AUD' then '0.775882' 
+       when year = 2021 and month = 6 and currency = 'AUD' then '0.764412' 
+       when year = 2021 and month = 7 and currency = 'AUD' then '0.742994' 
+       when year = 2021 and month = 8 and currency = 'AUD' then '0.730067' 
+       when year = 2021 and month = 9 and currency = 'AUD' then '0.732331' 
+       when year = 2021 and month = 10 and currency = 'AUD' then '0.739189' 
+       when year = 2021 and month = 11 and currency = 'AUD' then '0.730511' 
+       when year = 2021 and month = 12 and currency = 'AUD' then '0.714912'
+
+       when year = 2022 and month = 1 and currency = 'EUR' then '1.135125807' 
+       when year = 2022 and month = 2 and currency = 'EUR' then '1.132148387' 
+       when year = 2022 and month = 3 and currency = 'EUR' then '1.102175' 
+       when year = 2022 and month = 4 and currency = 'EUR' then '1.089916129' 
+       when year = 2022 and month = 5 and currency = 'EUR' then '1.054093333' 
+       when year = 2022 and month = 6 and currency = 'EUR' then '1.060787097' 
+       when year = 2022 and month = 7 and currency = 'EUR' then '1.024931035' 
+       when year = 2022 and month = 8 and currency = 'EUR' then '1.015929032' 
+       when year = 2022 and month = 9 and currency = 'EUR' then '0.995993807' 
+       when year = 2022 and month = 10 and currency = 'EUR' then '0.978726667' 
+       when year = 2022 and month = 11 and currency = 'EUR' then '1.015' 
+       when year = 2022 and month = 12 and currency = 'EUR' then '1.053843333'    
+       when year = 2022 and month = 1 and currency = 'GBP' then '1.356309677'
+       when year = 2022 and month = 2 and currency = 'GBP' then '1.352270968' 
+       when year = 2022 and month = 3 and currency = 'GBP' then '1.319542857' 
+       when year = 2022 and month = 4 and currency = 'GBP' then '1.304335484' 
+       when year = 2022 and month = 5 and currency = 'GBP' then '1.243223333' 
+       when year = 2022 and month = 6 and currency = 'GBP' then '1.239858065' 
+       when year = 2022 and month = 7 and currency = 'GBP' then '1.201493103' 
+       when year = 2022 and month = 8 and currency = 'GBP' then '1.205412903' 
+       when year = 2022 and month = 9 and currency = 'GBP' then '1.148293129' 
+       when year = 2022 and month = 10 and currency = 'GBP' then '1.117466667' 
+       when year = 2022 and month = 11 and currency = 'GBP' then '1.168825807' 
+       when year = 2022 and month = 12 and currency = 'GBP' then '1.216903333'   
+       when year = 2022 and month = 1 and currency = 'CAD' then '0.791389836'
+       when year = 2022 and month = 2 and currency = 'CAD' then '0.785626121' 
+       when year = 2022 and month = 3 and currency = 'CAD' then '0.788131793' 
+       when year = 2022 and month = 4 and currency = 'CAD' then '0.795315238' 
+       when year = 2022 and month = 5 and currency = 'CAD' then '0.777042905' 
+       when year = 2022 and month = 6 and currency = 'CAD' then '0.782231497' 
+       when year = 2022 and month = 7 and currency = 'CAD' then '0.772645084' 
+       when year = 2022 and month = 8 and currency = 'CAD' then '0.776468579' 
+       when year = 2022 and month = 9 and currency = 'CAD' then '0.758076978' 
+       when year = 2022 and month = 10 and currency = 'CAD' then '0.72823848' 
+       when year = 2022 and month = 11 and currency = 'CAD' then '0.743626151' 
+       when year = 2022 and month = 12 and currency = 'CAD' then '0.736560791'  
+       when year = 2022 and month = 1 and currency = 'AUD' then '0.721275883'
+       when year = 2022 and month = 2 and currency = 'AUD' then '0.713160948' 
+       when year = 2022 and month = 3 and currency = 'AUD' then '0.734158146' 
+       when year = 2022 and month = 4 and currency = 'AUD' then '0.743213151' 
+       when year = 2022 and month = 5 and currency = 'AUD' then '0.703994424' 
+       when year = 2022 and month = 6 and currency = 'AUD' then '0.706960713' 
+       when year = 2022 and month = 7 and currency = 'AUD' then '0.684804955' 
+       when year = 2022 and month = 8 and currency = 'AUD' then '0.697490292' 
+       when year = 2022 and month = 9 and currency = 'AUD' then '0.658790659' 
+       when year = 2022 and month = 10 and currency = 'AUD' then '0.636335818' 
+       when year = 2022 and month = 11 and currency = 'AUD' then '0.656732976' 
+       when year = 2022 and month = 12 and currency = 'AUD' then '0.674049273'    
+     end as float) as fx_rate   
+from
+(select distinct
+  d.year, d.month, d.week_start_date, d.date
+ ,case when countrycode in ('at','be','ch','de','dk','es','fb','fi','fr','ie','nl','no','se') then 'EUR'
+       when countrycode = 'uk' then 'GBP'
+       when countrycode = 'ca' then 'CAD'
+       when countrycode in ('au','nz') then 'AUD'
+    end as currency       
+ from intl.hive_member m
+ join reporting.DW_D_DATE d on date(m.dateProfileComplete) = d.date 
+ where d.year between 2019 and 2022) fx_v1
+         
+union
+
+select 
+  d.year, d.month, d.week_start_date, d.date,
+  source_currency as currency,
+  currency_rate as fx_rate
+from 
+  (select 
+    coalesce(fx.current_rate_date, fx_r.current_rate_date) as current_rate_date,
+    coalesce(fx.source_currency, fx_r.source_currency) as source_currency,
+    coalesce(fx.currency_rate, fx_r.currency_rate) as currency_rate
+  from
+    (
+      select distinct 
+        current_rate_date,
+        source_currency,
+        currency_rate
+      from reporting.DW_CARE_FX_RATES_HISTORY
+      where current_rate_date >= '2023-01-01' and source_currency in ('EUR','GBP','CAD','AUD') and target_currency = 'USD'
+      group by 1,2,3 order by 1 asc
+    ) fx
+    full outer join 
+        (
+        select distinct 
+          (date(current_rate_date)+1) as current_rate_date, 
+          source_currency, 
+          currency_rate 
+        from reporting.DW_CARE_FX_RATES_HISTORY 
+        where current_rate_date in ('2023-03-23', '2023-05-19') and source_currency in ('EUR','GBP','CAD','AUD') and target_currency = 'USD'
+        group by 1,2,3
+        ) fx_r on fx.source_currency = fx_r.source_currency and fx.current_rate_date = fx_r.current_rate_date          
+  group by 1,2,3) fx_daily
+  join reporting.DW_D_DATE d on current_rate_date = d.date 
+group by 1,2,3,4,5,6
+)
+
+select distinct
+  coalesce(sp.year,fx.year) as year, 
+  coalesce(sp.month,fx.month) as month, 
+  coalesce(sp.week_start_date,fx.week_start_date) as week_start_date, 
+  coalesce(sp.date,fx.date) as date,
+  sp.role, sp.spend_category, sp.source, sp.spend_table, sp.country, 
+  coalesce(sp.currency,fx.currency) as currency, 
+  fx.fx_rate,
+  ifnull(sum(sp.spend_domestic_currency),0) as spend_domestic_currency,
+  ifnull(sum(case when sp.currency = 'EUR' then sp.spend_domestic_currency*fx.fx_rate
+           when sp.currency = 'GBP' then sp.spend_domestic_currency*fx.fx_rate
+           when sp.currency = 'CAD' then sp.spend_domestic_currency*fx.fx_rate  
+           when sp.currency = 'AUD' then sp.spend_domestic_currency*fx.fx_rate end),0) as spend_fixed_fx_usd
+from spend sp
+join fx_rates fx on sp.currency = fx.currency and sp.year = fx.year and sp.month = fx.month and sp.week_start_date = fx.week_start_date and sp.date = fx.date 
+group by 1,2,3,4,5,6,7,8,9,10,11
+order by 1,2,3,4 desc
