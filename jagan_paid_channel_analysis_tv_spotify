@@ -1,0 +1,177 @@
+with spend as (
+
+-- TV (DE Seekers)
+  select distinct
+    dd.year, dd.month, dd.date,
+    'DE' as country, 'TV' as category, 'TV' as channel, 'EUR' as currency,
+    sum(DE_TV) as spend
+  from intl.DW_MARKETING_SPEND_INTL
+    join reporting.DW_D_DATE dd on date(spend_date) = dd.date
+  where dd.year >= year(now())-1
+    and dd.date < date(current_date)   
+  group by 1,2,3,4,5,6,7 
+  
+union
+
+-- SPOTIFY (DE SEEKERS ONLY)
+  select distinct dd.year, dd.month, dd.date, 'DE' as country, 'Other' as category, 'Spotify' as channel, 'EUR' as currency, sum(DE_SEEKER_SPOTIFY) as spend
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE dd on spend_date = dd.date where dd.year >= year(now())-1 and dd.date < date(current_date) group by 1,2,3,4,5,6,7  
+),
+
+live_fx_rate as (
+      select distinct year, month, date, currency,
+        cast(case 
+               when year = 2022 and month = 1 and currency = 'EUR' then '1.135125807' 
+               when year = 2022 and month = 2 and currency = 'EUR' then '1.132148387' 
+               when year = 2022 and month = 3 and currency = 'EUR' then '1.102175' 
+               when year = 2022 and month = 4 and currency = 'EUR' then '1.089916129' 
+               when year = 2022 and month = 5 and currency = 'EUR' then '1.054093333' 
+               when year = 2022 and month = 6 and currency = 'EUR' then '1.060787097' 
+               when year = 2022 and month = 7 and currency = 'EUR' then '1.024931035' 
+               when year = 2022 and month = 8 and currency = 'EUR' then '1.015929032' 
+               when year = 2022 and month = 9 and currency = 'EUR' then '0.995993807' 
+               when year = 2022 and month = 10 and currency = 'EUR' then '0.978726667' 
+               when year = 2022 and month = 11 and currency = 'EUR' then '1.015' 
+               when year = 2022 and month = 12 and currency = 'EUR' then '1.053843333'       
+           end as float) as fx_rate   
+      from
+      (select distinct
+        dd.year, dd.month, dd.date
+       ,case when countrycode = 'de' then 'EUR' end as currency       
+       from intl.hive_member m
+       join reporting.DW_D_DATE dd on date(m.dateMemberSignup) = dd.date 
+       where dd.year = 2022) fx_v1
+      group by 1,2,3,4,5
+         
+      union
+
+      select 
+        dd.year, dd.month, dd.date,
+        source_currency as currency,
+        currency_rate as fx_rate
+      from 
+        (select 
+          coalesce(fx.current_rate_date, fx_r.current_rate_date) as current_rate_date,
+          coalesce(fx.source_currency, fx_r.source_currency) as source_currency,
+          coalesce(fx.currency_rate, fx_r.currency_rate) as currency_rate
+        from
+          (
+            select distinct 
+              current_rate_date,
+              source_currency,
+              currency_rate
+            from reporting.DW_CARE_FX_RATES_HISTORY
+            where current_rate_date >= '2023-01-01'
+            and source_currency = 'EUR' and target_currency = 'USD' 
+            group by 1,2,3 order by 1 asc
+          ) fx
+          full outer join 
+              (
+              select distinct 
+                (date(current_rate_date)+1) as current_rate_date, 
+                source_currency, 
+                currency_rate 
+              from reporting.DW_CARE_FX_RATES_HISTORY 
+              where current_rate_date in ('2023-03-23', '2023-05-19') and source_currency = 'EUR' and target_currency = 'USD'
+              group by 1,2,3
+              ) fx_r on fx.source_currency = fx_r.source_currency and fx.current_rate_date = fx_r.current_rate_date          
+        group by 1,2,3) fx_daily
+        join reporting.DW_D_DATE dd on current_rate_date = dd.date and dd.date < date(current_date)
+      group by 1,2,3,4,5
+),
+
+visits as (
+  select 
+      dd.year, dd.month, dd.date, 
+      upper(v.countrycode) as country,
+      case when (lower(v.rxsite) like 'careus%' or lower(v.rxcampaign)='direct') then 'TV'
+           when lower(rxsite) = 'spotify' then 'Other' end as category,      
+      case when (lower(v.rxsite) like 'careus%' or lower(v.rxcampaign)='direct') then 'TV'
+           when lower(rxsite) = 'spotify' then 'Spotify' end as channel,
+    count(distinct visitorid) as visits        
+    from intl.hive_visit v
+    join reporting.DW_D_DATE dd             on date(v.StartDate) = dd.date
+    where (v.memberid is null or v.signup = true)
+      --and lower(v.rxaudience) in ('seeker', '', 'all')
+      and dd.year >= year(now())-1
+      and dd.date < date(current_date)
+      and ( (lower(v.rxsite) like 'careus%' or lower(v.rxcampaign)='direct') or lower(rxsite) = 'spotify') 
+      and v.countrycode = 'de'       
+    group by 1,2,3,4,5,6
+),
+
+basics as (
+   select
+      dd.year, dd.month, dd.date, 
+      upper(mm.countrycode) as country,
+      case when lower(mm.howdidyouhear) = 'tv' then 'TV'
+           when (lower(mm.site) = 'spotify' or lower(mm.howdidyouhear) = 'audiostream') then 'Other' end as category,      
+      case when lower(mm.howdidyouhear) = 'tv' then 'TV'
+           when (lower(mm.site) = 'spotify' or lower(mm.howdidyouhear) = 'audiostream') then 'Spotify' end as channel,
+     count(distinct mm.memberid) as basics  
+    from intl.hive_member mm   
+    join reporting.DW_D_DATE dd             on date(mm.dateMemberSignup) = dd.date    
+    where dd.year >= year(now())-1 
+      and dd.date < date(current_date)         
+      and lower(mm.role) = 'seeker'
+      and mm.countrycode = 'de'
+      and mm.IsInternalAccount = 'false'
+      and ( lower(mm.site) = 'spotify' or lower(mm.howdidyouhear) in ('audiostream', 'tv') ) 
+    group by 1,2,3,4,5,6
+),
+
+premiums as (
+    select
+      dd.year, dd.month, dd.date, 
+      upper(mm.countrycode) as country,
+       case when lower(mm.howdidyouhear) = 'tv' then 'TV'
+            when (lower(mm.site) = 'spotify' or lower(mm.howdidyouhear) = 'audiostream') then 'Other' end as category,      
+       case when lower(mm.howdidyouhear) = 'tv' then 'TV'
+            when (lower(mm.site) = 'spotify' or lower(mm.howdidyouhear) = 'audiostream') then 'Spotify' end as channel,
+     count(distinct sp.subscriptionId) as premiums,
+     count(distinct case when date(sp.subscriptionDateCreated) = date(mm.dateProfileComplete) then sp.subscriptionId end) as day1s,
+     count(distinct case when date(mm.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and date(sp.subscriptionDateCreated) != date(mm.dateMemberSignup) then sp.subscriptionId end) as nths,
+     count(distinct case when date(mm.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) then sp.subscriptionId end) as reupgrades
+     
+    from intl.transaction tt
+      join intl.hive_subscription_plan sp on sp.subscriptionId = tt.subscription_plan_id and sp.countrycode = tt.country_code
+      join reporting.DW_D_DATE dd         on date(sp.subscriptionDateCreated) = dd.date 
+      join intl.hive_member mm            on tt.member_id = mm.memberid and tt.country_code = mm.countrycode
+
+   where mm.countrycode = 'de'
+      and dd.year >= year(now())-1
+      and dd.date < date(current_date) 
+      and tt.type in ('PriorAuthCapture','AuthAndCapture')
+      and tt.status = 'SUCCESS'
+      and tt.amount > 0
+      and mm.IsInternalAccount = 'false'
+      and lower(mm.role) = 'seeker'
+      and ( lower(mm.site) = 'spotify' or lower(mm.howdidyouhear) in ('audiostream', 'tv') )             
+   group by 1,2,3,4,5,6
+)
+  
+select
+  coalesce(s.year, v.year, b.year, p.year) as Year,
+  coalesce(s.month, v.month, b.month, p.month) as Month,
+  coalesce(s.date, v.date, b.date, p.date) as Date,
+  coalesce(s.country, v.country, b.country, p.country) as Country,
+  coalesce(s.category, v.category, b.category, p.category) as Category,
+  coalesce(s.channel, v.channel, b.channel, p.channel) as Channel,
+  s.currency,
+  f.fx_rate,  
+
+  ifnull(sum(s.spend * f.fx_rate),0) as Spend_USD,
+  ifnull(sum(v.visits),0) as Visits,
+  ifnull(sum(b.basics),0) as Basics,
+  ifnull(sum(p.premiums),0) as Premiums,
+  ifnull(sum(p.day1s),0) as Day1s,
+  ifnull(sum(p.nths),0) as Nths,
+  ifnull(sum(p.reupgrades),0) as Reupgrades
+  
+from spend s
+  join live_fx_rate f         on s.year = f.year and s.month = f.month and s.date = f.date and s.currency = f.currency
+  full outer join visits v    on s.year = v.year and s.month = v.month and s.date = v.date and s.country = v.country and s.category = v.category and s.channel = v.channel
+  full outer join basics b    on s.year = b.year and s.month = b.month and s.date = b.date and s.country = b.country and s.category = b.category and s.channel = b.channel
+  full outer join premiums p  on s.year = p.year and s.month = p.month and s.date = p.date and s.country = p.country and s.category = p.category and s.channel = p.channel
+  
+group by 1,2,3,4,5,6,7,8 order by 1,2,3 asc
