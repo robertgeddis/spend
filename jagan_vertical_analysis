@@ -40,6 +40,132 @@ with spend as (
     and dd.year >= year(now())-1
     and dd.date < date(current_date)
   group by 1,2,3,4,5,6,7
+  
+  union
+  
+  select distinct
+   dd.year, dd.month, dd.date,
+   'DE' as country, vertical, 'Meinestadt' as channel, 'EUR' as currency,
+   sum(case when spend.year = spend.current_year and spend.month = spend.current_month then ((spend)/current_days) else ((spend)/days_in_month) end) as spend
+  from (
+    select distinct
+      year(sp.subscriptionDateCreated) as year,
+      month(sp.subscriptionDateCreated) as month,
+      date_part('day', last_day(sp.subscriptionDateCreated)) as days_in_month,
+      date_part('day', current_date()-1) as current_days,
+      month(current_date()-1) as current_month,
+      year(current_date()-1) as current_year,
+      case when lower(m.service) in ('br', 'all') then 'Brand'
+           when (lower(m.service) not in ('br', 'all') and m.vertical = 'homeCare') then 'Housekeeping' 
+           when (lower(m.service) not in ('br', 'all') and (m.vertical is null or m.vertical = '')) then 'Childcare' 
+        else initcap(lower(m.vertical)) end as vertical,
+      'EUR' as currency,
+      count(distinct sp.subscriptionId) as premiums,
+      case when count(distinct sp.subscriptionId)<=150 then (count(distinct sp.subscriptionId)*80) 
+        when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
+    from intl.transaction t
+      join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
+        and year(sp.subscriptionDateCreated) >= year(current_date())-1 and date(sp.subscriptionDateCreated) < current_date()
+      join intl.hive_member m on t.member_id = m.memberid and t.country_code = sp.countrycode and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated)
+        and m.IsInternalAccount is not true
+        and lower(m.role) = 'seeker' and lower(m.audience) = 'seeker'
+        and lower(m.campaign) = 'online' and lower(m.site) = 'meinestadt.de' 
+    where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
+      and t.country_code = 'de'      
+      and year(t.date_created) >= year(now())-1 and date(t.date_created) < current_date()
+    group by 1,2,3,4,5,6,7,8
+  ) spend
+    join reporting.DW_D_DATE dd             on spend.year = dd.year and spend.month = dd.month and dd.date < date(current_date)
+    group by 1,2,3,4,5,6,7
+    
+    union
+    
+    select distinct
+      dd.year, dd.month, dd.date,     
+      case when program in ('DE', 'AT', 'CH') then program
+            when product like '%FR%' then 'FR'
+            when product like '%BE_nl%' then 'BE'  
+            when product like '%BE_fr%' then 'FB'  
+            when product like '%DK%' then 'DK'  
+            when product like '%FI%' then 'FI'  
+            when product like '%NL%' then 'NL'  
+            when product like '%SE%' then 'SE'  
+            when product like '%IE%' then 'IE'  
+            when product like '%ES%' then 'ES'  
+            when product like '%AU%' then 'AU'  
+            when product like '%NO%' then 'NO'
+            when product like '%NZ%' then 'NZ'
+            when product like '%UK%' then 'UK'
+            when product like '%CA%' then 'CA'
+       end as country, 
+       'Brand' as vertical,
+       'Quality Click' as channel,
+       'EUR' as currency,
+       sum(qc.commission) as spend
+    from intl.quality_click_spend qc
+      join reporting.DW_D_DATE dd     on date(qc.day) = dd.date     
+    where partnerid <> 435
+      and (lower(product) not like '%alltagshelfer%' or lower(product) not like '%provider%')
+      and dd.year >= year(now())-1
+      and dd.date < date(current_date)  
+    group by 1,2,3,4,5,6,7
+  
+  union
+
+  select distinct
+    dd.year, dd.month, dd.date,  
+    'DE' as country, 'Brand' as vertical, 'Putzchecker' as channel, 'EUR' as currency,
+    ifnull((sum(clicks)*1.5),0) as spend
+  from intl.quality_click_cpc qc
+    join reporting.DW_D_DATE dd on date(qc.day) = dd.date
+  where dd.year >= year(now())-1
+    and dd.date < date(current_date)  
+  group by 1,2,3,4,5,6,7
+  
+  union
+
+  select distinct dd.year, dd.month, dd.date, 'DE' as country, 'Brand' as vertical, 'MiBaby' as channel, 'EUR' as currency, ifnull(sum(DE_Seeker_Mibaby),0) as spend 
+  from intl.DW_MARKETING_SPEND_INTL ms join reporting.DW_D_DATE dd on ms.spend_date = dd.date where dd.year >= year(now())-1 and dd.date < date(current_date)  
+  group by 1,2,3,4,5,6,7
+
+  union
+
+  select distinct
+    dd.year, dd.month, dd.date,
+    case when aw.advertiser_id = '10557' then 'DE'
+         when aw.advertiser_id = '10709' then 'AT'   
+         when aw.advertiser_id = '45671' then 'UK' 
+    end as country,  
+  	'Brand' as vertical,
+  	'Awin' as channel,
+  	case when aw.advertiser_id in ('10557', '10709') then 'EUR' else 'GBP' end as currency,   	   
+    (sum(aw.commission_amount)*1.3) as spend
+  from intl.awin_spend aw
+    join reporting.DW_D_DATE dd             on date(aw.transaction_Date) = dd.date
+  where dd.year >= year(now())-1
+    and dd.date < date(current_date)  
+    and aw.commission_group_code not in ('REG_P','REGP') 
+    and lower(aw.commissionStatus) in ('approved', 'pending')
+	group by 1,2,3,4,5,6,7
+	     
+  union   
+
+  select distinct dd.year, dd.month, dd.date, 'DE' as country, 'Brand' as vertical, 'Pinterest' as channel, 'EUR' as currency, sum(DE_Seeker_Pinterest) as spend 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE dd on spend_date = dd.date where dd.year >= year(now())-1 and dd.date < date(current_date) group by 1,2,3,4,5,6,7 
+  union
+  select distinct dd.year, dd.month, dd.date, 'UK' as country, 'Brand' as vertical, 'Pinterest' as channel, 'EUR' as currency, sum(UK_Seeker_Pinterest) as spend  
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE dd on spend_date = dd.date where dd.year >= year(now())-1 and dd.date < date(current_date) group by 1,2,3,4,5,6,7  
+  union
+  select distinct dd.year, dd.month, dd.date, 'CA' as country, 'Brand' as vertical, 'Pinterest' as channel, 'EUR' as currency, sum(CA_Seeker_Pinterest) as spend
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE dd on spend_date = dd.date where dd.year >= year(now())-1 and dd.date < date(current_date) group by 1,2,3,4,5,6,7 
+  union
+  select distinct dd.year, dd.month, dd.date, 'AU' as country, 'Brand' as vertical, 'Pinterest' as channel, 'EUR' as currency, sum(AU_Seeker_Pinterest) as spend 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE dd on spend_date = dd.date where dd.year >= year(now())-1 and dd.date < date(current_date) group by 1,2,3,4,5,6,7
+ 
+  union
+
+  select distinct dd.year, dd.month, dd.date, 'CA' as country, 'Brand' as vertical, 'Impact' as channel, 'EUR' as currency, sum(CA_OTHER_ONLINE) as spend 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE dd on spend_date = dd.date where dd.year >= year(now()) and dd.date < date(current_date) group by 1,2,3,4,5,6,7  
 ),
 
 live_fx_rate as (
@@ -148,7 +274,8 @@ visits as (
    select 
       dd.year, dd.month, dd.date, 
       upper(v.countrycode) as country,
-      case when lower(rxservice) in ('br', 'all', '', 'general', 'op') then 'Brand'
+      case when lower(rxsite) in ('qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob', 'putzchecker', 'awin', 'zanox', 'pinterest', 'impact', 'mibaby') then 'Brand'
+           when lower(rxservice) in ('br', 'all', '', 'general', 'op') then 'Brand'
            when lower(rxservice) in ('cc', 'c', 'childcare') then 'Childcare'
            when lower(rxservice) = 'hk' then 'Housekeeping'
            when lower(rxservice) = 'pc' then 'Petcare'
@@ -161,11 +288,19 @@ visits as (
            when lower(rxsite) = 'facebook' then 'Facebook'
            when lower(rxsite) = 'gdn' then 'GDN'
            when lower(rxsite) = 'youtube' then 'YouTube'
+           when lower(rxsite) = 'meinestadt.de' then 'Meinestadt'
+           when lower(rxsite) in ('qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob') then 'Quality Click'
+           when lower(rxsite) in ('awin', 'zanox') then 'Awin'
+           when lower(rxsite) = 'putzchecker' then 'Putzchecker'
+           when lower(rxsite) = 'pinterest' then 'Pinterest'
+           when lower(rxsite) = 'impact' then 'Impact'
+           when lower(rxsite) = 'mibaby' then 'MiBaby'
         end as channel,  
       count(distinct visitorid) as visits        
     from intl.hive_visit v
     join reporting.DW_D_DATE dd on date(v.StartDate) = dd.date
-    where (lower(rxcampaign) = 'sem' or lower(rxsite) in ('facebook', 'gdn', 'youtube'))
+    where ( lower(rxcampaign) = 'sem' or 
+            lower(rxsite) in ('facebook', 'gdn', 'youtube', 'meinestadt.de', 'qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob', 'putzchecker', 'awin', 'zanox', 'pinterest', 'impact', 'mibaby') )
       and (v.memberid is null or v.signup = true)
       and dd.year >= year(now())-1
       and dd.date < date(current_date)
@@ -173,42 +308,58 @@ visits as (
 ),
 
 basics as (
-     select
+ select
       dd.year, dd.month, dd.date, 
       upper(mm.countrycode) as country,
-      case when lower(mm.service) in ('br', 'all') then 'Brand'
+      case when lower(mm.site) in ('qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob', 'putzchecker', 'awin', 'zanox', 'pinterest', 'impact', 'mibaby') then 'Brand'
+           when lower(mm.service) in ('br', 'all') then 'Brand'
            when (lower(mm.service) not in ('br', 'all') and mm.vertical = 'homeCare') then 'Housekeeping' 
            when (lower(mm.service) not in ('br', 'all') and (mm.vertical is null or mm.vertical = '')) then 'Childcare' 
         else initcap(lower(mm.vertical)) end as vertical, 
-      case when lower(mm.campaign) = 'sem' then 'SEM'
+      case when lower(mm.campaign) = 'sem' then 'SEM' 
            when lower(mm.site) = 'facebook' then 'Facebook'
            when lower(mm.site) = 'gdn' then 'GDN'
            when lower(mm.site) = 'youtube' then 'YouTube'
-         end as channel,  
+           when lower(mm.site) = 'meinestadt.de' then 'Meinestadt'
+           when lower(mm.site) in ('qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob') then 'Quality Click'
+           when lower(mm.site) in ('awin', 'zanox') then 'Awin'
+           when lower(mm.site) = 'putzchecker' then 'Putzchecker'
+           when lower(mm.site) = 'pinterest' then 'Pinterest'
+           when lower(mm.site) = 'impact' then 'Impact'
+           when lower(mm.site) = 'mibaby' then 'MiBaby'
+        end as channel,  
       count(distinct mm.memberid) as basics  
     from intl.hive_member mm   
     join reporting.DW_D_DATE dd on date(mm.dateMemberSignup) = dd.date 
-    where (lower(campaign) = 'sem' or lower(site) in ('facebook', 'youtube', 'gdn'))
+    where (lower(campaign) = 'sem' or lower(site) in ('facebook', 'youtube', 'gdn', 'meinestadt.de', 'qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob', 'putzchecker', 'awin', 'zanox', 'pinterest', 'impact', 'mibaby'))
       and lower(role) = 'seeker'
       and IsInternalAccount = 'false'
       and dd.year >= year(now())-1 
       and dd.date < date(current_date)
-    group by 1,2,3,4,5,6
+    group by 1,2,3,4,5,6 
 ),
 
 premiums as (
-    select
+ select
       dd.year, dd.month, dd.date, 
       upper(mm.countrycode) as country,
-      case when lower(mm.service) in ('br', 'all') then 'Brand'
+      case when lower(mm.site) in ('qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob', 'putzchecker', 'awin', 'zanox', 'pinterest', 'impact', 'mibaby') then 'Brand'
+           when lower(mm.service) in ('br', 'all') then 'Brand'
            when (lower(mm.service) not in ('br', 'all') and mm.vertical = 'homeCare') then 'Housekeeping' 
            when (lower(mm.service) not in ('br', 'all') and (mm.vertical is null or mm.vertical = '')) then 'Childcare' 
         else initcap(lower(mm.vertical)) end as vertical, 
-      case when lower(mm.campaign) = 'sem' then 'SEM'
+      case when lower(mm.campaign) = 'sem' then 'SEM' 
            when lower(mm.site) = 'facebook' then 'Facebook'
            when lower(mm.site) = 'gdn' then 'GDN'
            when lower(mm.site) = 'youtube' then 'YouTube'
-         end as channel,     
+           when lower(mm.site) = 'meinestadt.de' then 'Meinestadt'
+           when lower(mm.site) in ('qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob') then 'Quality Click'
+           when lower(mm.site) in ('awin', 'zanox') then 'Awin'
+           when lower(mm.site) = 'putzchecker' then 'Putzchecker'
+           when lower(mm.site) = 'pinterest' then 'Pinterest'
+           when lower(mm.site) = 'impact' then 'Impact'
+           when lower(mm.site) = 'mibaby' then 'MiBaby'
+        end as channel,        
      count(distinct sp.subscriptionId) as premiums,
      count(distinct case when date(sp.subscriptionDateCreated) = date(mm.dateProfileComplete) then sp.subscriptionId end) as day1s,
      count(distinct case when date(mm.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and date(sp.subscriptionDateCreated) != date(mm.dateMemberSignup) then sp.subscriptionId end) as nths,
@@ -222,7 +373,7 @@ premiums as (
       and tt.amount > 0
       and mm.IsInternalAccount = 'false'
       and lower(mm.role) = 'seeker'
-      and (lower(mm.campaign) = 'sem' or lower(mm.site) in ('facebook', 'youtube', 'gdn'))
+      and (lower(campaign) = 'sem' or lower(site) in ('facebook', 'youtube', 'gdn', 'meinestadt.de', 'qualityclick', 'blog', 'generic', 'ortsdienst', '4everglen', 'snautz', 'marktde', 'stadtlist', 'aktuellejobs', 'alleskralle', 'jobrapido', 'metajob', 'savethestudent', 'studentjob', 'putzchecker', 'awin', 'zanox', 'pinterest', 'impact', 'mibaby'))
       and dd.year >= year(now())-1
       and dd.date < date(current_date)
   group by 1,2,3,4,5,6
