@@ -1,3 +1,24 @@
+select
+  month,
+  role,
+  channel,
+  --sum(spend_fixed_current_fx_usd) as spend
+  sum(case when channel = 'SEM' then spend_fixed_current_fx_usd end) as Total_SEM_Spend,
+  sum(case when channel = 'SEM' and role = 'seeker' then spend_fixed_current_fx_usd end) as Seeker_SEM_Spend,
+  sum(case when channel = 'SEM' and role = 'provider' then spend_fixed_current_fx_usd end) as Provider_SEM_Spend,
+  sum(case when channel = 'Facebook' then spend_fixed_current_fx_usd end) as Total_FB_Spend,
+  sum(case when channel = 'Facebook' and role = 'seeker' then spend_fixed_current_fx_usd end) as Seeker_FB_Spend,
+  sum(case when channel = 'Facebook' and role = 'provider' then spend_fixed_current_fx_usd end) as Provider_FB_Spend,
+  sum(case when channel in ('QualityClick', 'QualityClick_Providers', 'Putzchecker', 'MiBaby', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact', 'Recruitics', 'RecruiticsFee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') then spend_fixed_current_fx_usd end) as Total_OO_Spend,
+  sum(case when channel in ('QualityClick', 'Putzchecker', 'MiBaby', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact') then spend_fixed_current_fx_usd end) as Seeker_OO_Spend,
+  sum(case when channel in ('QualityClick_Providers', 'Recruitics', 'RecruiticsFee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') then spend_fixed_current_fx_usd end) as Provider_OO_Spend, 
+  sum(case when channel = 'TV' then spend_fixed_current_fx_usd end) as TV_Spend                                                    
+
+from
+
+(
+
+
 with spend as (
 
 -- SEM 
@@ -42,7 +63,7 @@ union
       (select distinct
         d.year, d.month, d.week_start_date, d.date,
        'seeker' as role, 
-       'Quality Click' as channel,      
+       'QualityClick' as channel,      
         case when program in ('DE', 'AT', 'CH') then lower(program)
               when product like '%FR%' then 'fr'
               when product like '%BE_nl%' then 'be'  
@@ -63,7 +84,7 @@ union
          sum(qc.commission) as spend
       from intl.quality_click_spend qc
         join reporting.DW_D_DATE d on date(day) = d.date
-      where partnerid<>435
+      where partnerid <> 435
         and (lower(product) not like '%alltagshelfer%' or lower(product) not like '%provider%') -- Assigned default to seekers as discussed with Fabian
         and d.year >= year(now())-1
         and d.date < date(current_date)
@@ -262,7 +283,7 @@ union
               when product like '%UK%' then 'uk'
               when product like '%CA%' then 'ca'
          end as country, 
-        'provider' as role, 'Quality Click' as channel,  
+        'provider' as role, 'QualityClick_Providers' as channel,  
         'EUR' as currency,
          (sum(qc.commission) + sum(qc.currency)) as spend
       from intl.quality_click_spend qc
@@ -296,7 +317,7 @@ union
 -- RECRUITICS FEE (DE Providers Only)
 select 
   d.year, d.month, d.week_start_date, d.date,
-  'de' as country, 'provider' as role, 'Recruitics Fee' as channel, currency,
+  'de' as country, 'provider' as role, 'RecruiticsFee' as channel, currency,
   sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then ((commission)/current_days) else ((commission)/days_in_month) end) as spend_domestic
 from
     (select 
@@ -607,3 +628,10 @@ left join fixed_current_fx cfx                   on sp.currency = cfx.currency
 
 group by 1,2,3,4,5,6,7,8,9,fx.fx_rate,cfx.fx_rate
 order by 1,2,3,4,5 desc
+
+) abc
+
+where year = 2023
+and month = 10
+
+group by 1,2,3
