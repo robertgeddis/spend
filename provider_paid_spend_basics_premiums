@@ -1,0 +1,437 @@
+with spend as (
+
+--- Recruitics   
+  select 
+    d.year, d.month,
+    case when country='GB' then 'uk'
+         when (country is null or country='') then 'de'
+      else lower(country) end as country,
+    'recruitics' as channel,       
+    case when lower(source)='jo' then 'jobisjob'
+         when lower(source) in ('reach-adview','reach-adzuna','reach-gigajob','reach-joblift','reach-jobrapido','reach-jooble',
+                                 'reach-jora','reach-stellenon','reach-jobisjob','reach-jobdiagno','reach-neuvoo','reach-rubrikk') then 'reach'
+         when lower(source) in ('trovitde','trovit','trovituk','trovitukauto') then 'trovit'
+         when lower(source) in ('zipalerts','ziprecruiter') then 'ziprecruiter'
+         when lower(source) = 'allthetopbanana' then 'allthetopbananas'
+      else lower(source) end as site,
+    'EUR' as currency,
+    sum(rc.spend) as spend
+  from intl.recruitics_spend_intl rc  
+  join reporting.DW_D_DATE d on date(rc.day) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+    and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
+  group by 1,2,3,4,5,6 
+  
+  union
+  
+  select 
+    d.year, d.month, 'de' as country, 'recrutics' as channel, 'recrutics fee' as site, 'EUR' as currency,
+    sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then ((commission)/current_days) else ((commission)/days_in_month) end) as spend
+  from
+      (select 
+        year(rc.day) as year,
+        month(rc.day) as month,
+        month(current_date()-1) as current_month,
+        year(current_date()-1) as current_year,
+        date_part('day', last_day(rc.day)) as days_in_month,
+        date_part('day', current_date()-1) as current_days,
+        currency,
+        case when sum(spend) < '20000' then '2500'
+             when sum(spend) between '20000' and '30000' then '3000'
+             when sum(spend) between '30000' and '50000' then '3600'
+             when sum(spend) between '50000' and '80000' then '5000'
+             when sum(spend) > '80000' then '8000'
+          else '3500' end as commission 
+      from intl.recruitics_spend_intl rc
+      where year(rc.day) >= year(now())-1
+        and date(rc.day) < date(current_date)
+        and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
+      group by 1,2,3,4,5,6,7) rc_fee
+  join reporting.DW_D_DATE d on rc_fee.year = d.year and rc_fee.month = d.month and d.date < date(current_date)
+  group by 1,2,3,4,5,6 
+
+  union
+ 
+--- Awin   
+  select
+    d.year, d.month,
+    case when advertiser_id = '10557' then 'de'
+         when advertiser_id = '10709' then 'at'   
+         when advertiser_id = '45671' then 'uk' 
+      end as country,  
+    'online' as channel, 
+    'awin' as site,
+    case when advertiser_id in ('10557', '10709') then 'EUR' else 'GBP' end as currency,
+    (sum(aw.commission_amount)*1.3) as spend --- this includes 30% fee on commission
+  from intl.awin_spend aw
+  join reporting.DW_D_DATE d on date(transaction_Date) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+    and commission_group_code in ('REG_P','REGP')
+    and lower(aw.commissionStatus) in ('approved', 'pending')
+  group by 1,2,3,4,5,6
+      
+  union
+
+--- Quality Click    
+  select 
+    d.year, d.month,
+    case when product like '%AU%' then 'au'
+         when product like '%BE_nl%' then 'be'
+         when product like '%BE_fr%' then 'fb'
+         when product like '%CA%' then 'ca'
+         when product like '%DK%' then 'dk'
+         when product like '%ES%' then 'es'
+         when product like '%FI%' then 'fi'
+         when product like '%FR%' then 'fr'
+         when product like '%IE%' then 'ie'
+         when product like '%NO%' then 'no'
+         when product like '%NZ%' then 'nz'
+         when product like '%NL%' then 'nl'
+         when product like '%SE%' then 'se'
+         when product like '%UK%' then 'uk'
+         when program in ('AT','CH','DE') then lower(program) end as country,
+    'quality click' as channel,  
+    case when partnerid in ('50','52','55','58','76','159','241','385','393','394','424','427','428','429','431','432','440','441','450','451','459','460','464','469') then 'qualityclick'
+         when partnerid='17' then 'blog'
+         when partnerid='54' then 'marktde'
+         when partnerid='189' then 'stadtlist'
+         when partnerid='321' then 'careerjet'
+         when partnerid='348' then 'metajob'
+         when partnerid='380' then 'meinestadt'
+         when partnerid='452' then 'alleskralle'
+         when partnerid='457' then 'joblift'
+         when partnerid='458' then 'aktuellejobs'
+         when partnerid='461' then 'jobkicks'
+         when partnerid='462' then 'studiumratgeber'
+         when partnerid='466' then 'savethestudent'
+      end as site,
+    'EUR' as currency,
+    (sum(qc.currency) + sum(qc.commission)) as spend
+  from intl.quality_click_spend qc
+  join reporting.DW_D_DATE d on date(day) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+    and partnerid<>435
+    and (product like '%Alltagshelfer%' or product like '%Provider%')
+  group by 1,2,3,4,5,6
+    
+  union
+
+--- Student Job    
+  select distinct
+    year, month, country, channel, site, currency, 
+    ifnull(sum(Spend),0) as spend
+  from 
+    (select distinct
+        d.year, d.month, 'online' as Channel, 'studentjob' as site, 'EUR' as currency,      
+        case when program in ('DE', 'AT', 'CH') then lower(program)
+             when product like '%FR%' then 'fr'
+             when product like '%BE_nl%' then 'be'  
+             when product like '%BE_fr%' then 'fb'  
+             when product like '%DK%' then 'dk'  
+             when product like '%FI%' then 'fi'  
+             when product like '%NL%' then 'nl'  
+             when product like '%SE%' then 'se'  
+             when product like '%IE%' then 'ie'  
+             when product like '%ES%' then 'es'  
+             when product like '%AU%' then 'au'  
+             when product like '%NO%' then 'no'
+             when product like '%NZ%' then 'nz'
+             when product like '%UK%' then 'uk'
+             when product like '%CA%' then 'ca'
+           end as country,                    
+        sum(case when qc.program='DE' and d.year <= 2022 then qc.count*2 
+                 when qc.program='DE' and d.year > 2022 then qc.count*3.5 
+                 when qc.product like '%SE%' and d.year <= 2022 then qc.count*2 
+                 when qc.product like '%SE%' and d.year > 2022 then qc.count*4
+                 when qc.product like '%UK%' and d.year <= 2022 then qc.count*1.5
+                 when qc.product like '%UK%' and d.year > 2022 then qc.count*3
+                 when qc.product like '%NL%' then qc.count*3.5 
+                 when qc.product like '%BE_nl%' and d.date < '2022-05-01' then qc.count*1.5
+                 when qc.product like '%BE_nl%' and d.date >= '2022-05-01' then  qc.count*3.5
+             else qc.count*1 end) as spend                           
+        from intl.quality_click_spend qc
+        join reporting.DW_D_DATE d on date(day) = d.date     
+        where partnerid = 435
+          and (product like '%Alltagshelfer%' or product like '%Provider%')
+          and year(d.date) >= year(now())-1
+          and date(d.date) < date(current_date)
+        group by 1,2,3,4,5,6) sj     
+    group by 1,2,3,4,5,6 
+   
+  union
+
+--- App Jobs    
+  select 
+    d.year, d.month,
+    case when country='Canada' then 'ca'
+         when country='Germany' then 'de'
+         when country='United Kingdom' then 'uk'
+       else lower(country) end as country,
+    'online' as channel,
+    'appjobs' as site,
+    'EUR' as currency,
+    sum(aj.total_spent_usd) as spend
+  from intl.appjobs_spend aj
+  join reporting.DW_D_DATE d on date(day) = d.date
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+    
+  union
+
+--- SEM    
+  select
+    d.year, d.month, lower(country) as country,
+    'sem' as channel, 
+    'sem' as site,
+    sem.currency,
+    sum(sem.cost) as spend
+  from intl.DW_F_CAMPAIGN_SPEND_INTL sem
+  join reporting.DW_D_DATE d on date(sem.date) = d.date
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date) 
+    and campaign_type = 'Provider' 
+    and country is not null
+  group by 1,2,3,4,5,6 
+    
+  union
+  
+--- Facebook   
+  select
+    d.year, d.month,
+    case when upper(country) = 'EN' then 'ca' 
+         when upper(country) = '_'  then 'au' 
+         when upper(country) = 'VE'  then 'de' 
+      else lower(country) end as country,
+    'facebook' as channel,    
+    'facebook' as site,   
+    'EUR' as currency,
+    sum(fb.spend) as spend    
+  from intl.DW_F_FACEBOOK_SPEND_INTL fb
+  join reporting.DW_D_DATE d on date(date_start) = d.date
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date) 
+    and campaign_type = 'provider'
+  group by 1,2,3,4,5,6 
+      
+  union
+  
+--- My Perfect Job    
+  select
+    d.year, d.month, 'de' as country,
+    'online' as channel,
+    'myperfectjob' as site,
+    'EUR' as currency,
+    sum(DE_Provider_Myperfectjob) as spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+  
+  union
+
+--- AppCast
+  select
+    d.year, d.month,
+    'de' as country,
+    'online' as channel,
+    'appcast' as site,
+    'EUR' as currency,
+    sum(de_provider_appcast) as spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+  
+  union
+  
+  select
+    d.year, d.month,
+    'uk' as country,
+    'online' as channel,
+    'appcast' as site,
+    'GBP' as currency,
+    sum(uk_provider_appcast) as spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+  
+  union
+  
+  select
+    d.year, d.month,
+    'at' as country,
+    'online' as channel,
+    'alleskralle' as site,
+    'EUR' as currency,
+    sum(AT_PROVIDER_ALLESKRALLE) as Spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where d.date >= '2023-05-04'
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6
+  
+  union
+  
+  select
+    d.year, d.month,
+    'ch' as country,
+    'online' as channel,
+    'alleskralle' as site,
+    'EUR' as currency,
+    sum(CH_PROVIDER_ALLESKRALLE) as spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where d.date >= '2023-05-04'
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+  
+  union
+  
+  select
+    d.year, d.month,
+    'de' as country,
+    'online' as channel,
+    'alleskralle' as site,
+    'EUR' as currency,
+    sum(DE_PROVIDER_ALLESKRALLE) as spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where d.date >= '2023-05-04'
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+  
+  union
+  
+  select
+    d.year, d.month,
+    'de' as country,
+    'online' as channel,
+    'joblift' as site,
+    'EUR' as currency,
+    sum(DE_PROVIDER_JOBLIFT) as spend
+  from intl.DW_MARKETING_SPEND_INTL s
+  join reporting.DW_D_DATE d on date(spend_date) = d.date 
+  where d.year >= year(now())-1
+    and date(d.date) < date(current_date)
+  group by 1,2,3,4,5,6 
+),
+
+fx_rate as (
+  select distinct
+    source_currency as Currency,
+    currency_rate as Fx_Rate
+  from reporting.DW_CARE_FX_RATES fx 
+  where target_currency = 'USD'
+    and currency_rate_type='Current'
+    and source_currency in ('EUR','GBP','CAD','AUD')
+  group by 1,2 
+),
+
+basics as (
+  select 
+    d.year, d.month, lower(m.countrycode) as Country,  
+    case when lower(m.campaign) = 'affiliate' then 'online'
+         when lower(m.campaign) = 'sem' then 'sem'
+         when lower(m.campaign) = 'online' and lower(m.site) = 'facebook' then 'facebook'  
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) in ('absolventen','babysitter.de','blog','careerjet','criteo','erdbeerlounge','erdbeerlounge2','gelegenheitsjobs','generic','generictotal',
+         'glassdoor','jobrobot','mapmeo','marktde','marktplaats','metajob','mitula','nannytax','njobs','palkkausfi','provider','qualityclick','quoka',
+         'rabathelten','recrudo','rubrikk','savethestudent','so.dk','stadtlist','stellenwerk','studiumratgeber','meinestadt','aktuellejobs','jobkicks') then 'quality click'  
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) = 'joblift' and date(m.dateMemberSignup) <= '2022-07-25' then 'quality click'
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) = 'alleskralle' and date(m.dateMemberSignup) <= '2023-05-03' then 'quality click'
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) in ('adzuna','adzunaauto','allthetopbananas','indeed','indeedauto','jobisj','jobisjob','jobisjobauto','jobisjobde',
+         'jobisjobdeauto','jobrapido','jobrapidoauto','jobrapidoleads','jooble','joobleauto','jorapaid','neuvoo','trovit','trovitde','trovitdeauto',
+         'trovituk','trovituksauto','ziprecruiter','reach','monster') then 'recruitics'
+     else lower(m.campaign) end as channel,            
+    case when lower(m.campaign) = 'sem' then 'sem'
+         when lower(m.site) in ('adzuna','adzunaauto') then 'adzuna'
+         when lower(m.site) in ('indeed','indeedauto') then 'indeed'
+         when lower(m.site) in ('jobrapido', 'jobrapidoauto', 'jobrapidoleads') then 'jobrapido'
+         when lower(m.site) in ('jooble, joobleauto') then 'jooble'
+         when lower(m.site) = 'jorapaid' then 'jora'
+         when lower(m.site) in ('trovitde','trovitdeauto','trovit','trovituk','trovitukauto') then 'trovit'
+         when lower(m.site) in ('jobisj','jobisjob','jobisjobauto','jobisjobde','jobisjobdeauto') then 'jobisjob'
+     else lower(m.site) end as site,
+    count(distinct m.memberid) as basics
+  from intl.hive_member m   
+  join reporting.DW_D_DATE d on date(dateProfileComplete) = d.date 
+  where year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+    and m.IsInternalAccount = 'false'
+    and lower(m.role) = 'provider'
+    and lower(m.campaign) in ('online', 'affiliate', 'sem')
+    and lower(m.site) not like '%careu%'
+  group by 1,2,3,4,5
+),
+
+premiums as (
+  select 
+    d.year, d.month, lower(m.countrycode) as country,  
+    case when lower(m.campaign) = 'affiliate' then 'online'
+         when lower(m.campaign) = 'sem' then 'sem'
+         when lower(m.campaign) = 'online' and lower(m.site) = 'facebook' then 'facebook'  
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) in ('absolventen','babysitter.de','blog','careerjet','criteo','erdbeerlounge','erdbeerlounge2','gelegenheitsjobs','generic','generictotal',
+         'glassdoor','jobrobot','mapmeo','marktde','marktplaats','metajob','mitula','nannytax','njobs','palkkausfi','provider','qualityclick','quoka',
+         'rabathelten','recrudo','rubrikk','savethestudent','so.dk','stadtlist','stellenwerk','studiumratgeber','meinestadt','aktuellejobs','jobkicks') then 'quality click'  
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) = 'joblift' and date(m.dateMemberSignup) <= '2022-07-25' then 'quality click'
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) = 'alleskralle' and date(m.dateMemberSignup) <= '2023-05-03' then 'quality click'
+         when lower(m.campaign) in ('online','affiliate') and lower(m.site) in ('adzuna','adzunaauto','allthetopbananas','indeed','indeedauto','jobisj','jobisjob','jobisjobauto','jobisjobde',
+         'jobisjobdeauto','jobrapido','jobrapidoauto','jobrapidoleads','jooble','joobleauto','jorapaid','neuvoo','trovit','trovitde','trovitdeauto',
+         'trovituk','trovituksauto','ziprecruiter','reach','monster') then 'recruitics'
+     else lower(m.campaign) end as channel,            
+    case when lower(m.campaign) = 'sem' then 'sem'
+         when lower(m.site) in ('adzuna','adzunaauto') then 'adzuna'
+         when lower(m.site) in ('indeed','indeedauto') then 'indeed'
+         when lower(m.site) in ('jobrapido', 'jobrapidoauto', 'jobrapidoleads') then 'jobrapido'
+         when lower(m.site) in ('jooble, joobleauto') then 'jooble'
+         when lower(m.site)='jorapaid' then 'jora'
+         when lower(m.site) in ('trovitde','trovitdeauto','trovit','trovituk','trovitukauto') then 'trovit'
+         when lower(m.site) in ('jobisj','jobisjob','jobisjobauto','jobisjobde','jobisjobdeauto') then 'jobisjob'
+     else lower(m.site) end as site,
+    count(distinct sp.subscriptionId) as premiums,
+    count(distinct case when date(sp.subscriptionDateCreated)=date(dateProfileComplete) then sp.subscriptionId end) as day1s,
+    count(distinct case when date(m.dateFirstPremiumSignup)=date(sp.subscriptionDateCreated) and date(sp.subscriptionDateCreated)!=date(dateProfileComplete) then sp.subscriptionId end) as nths,
+    count(distinct case when date(m.dateFirstPremiumSignup)!=date(sp.subscriptionDateCreated) then sp.subscriptionId end) as reupgrades    
+  from intl.transaction t
+    left join intl.hive_subscription_plan sp  on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
+    join reporting.DW_D_DATE d                on date(sp.subscriptionDateCreated) = d.date
+    join intl.hive_member m                   on t.member_id = m.memberid and t.country_code = m.countrycode
+  where t.type in ('PriorAuthCapture','AuthAndCapture')
+    and t.status = 'SUCCESS'
+    and t.amount > 0
+    and m.IsInternalAccount = 'false'
+    and lower(m.role) = 'provider'
+    and year(d.date) >= year(now())-1
+    and date(d.date) < date(current_date)
+    and lower(m.campaign) in ('online', 'affiliate', 'sem')
+    and lower(m.site) not like '%careu%'
+  group by 1,2,3,4,5 
+)
+
+select distinct 
+  coalesce(s.year, b.year, p.year) as year,
+  coalesce(s.month, b.month, p.month) as month,
+  coalesce(s.country, b.country, p.country) as country,
+  coalesce(s.channel, b.channel, p.channel) as channel,
+  coalesce(s.site, b.site, p.site) as site,
+  
+  ifnull(sum(s.spend * fx.fx_rate),0) as spend_usd,
+  ifnull(sum(b.basics), 0) as basics,  
+  ifnull(sum(p.premiums), 0) as premiums,
+  ifnull(sum(p.day1s), 0) as day1s,
+  ifnull(sum(p.nths), 0) as nths,
+  ifnull(sum(p.reupgrades), 0) as reupgrades
+
+from spend s
+  full outer join basics b    on s.year = b.year and s.month = b.month and s.country = b.country and s.channel = b.channel and s.site = b.site  
+  full outer join premiums p  on s.year = p.year and s.month = p.month and s.country = p.country and s.channel = p.channel and s.site = p.site  
+  full outer join fx_rate fx  on s.currency = fx.currency
+
+group by 1,2,3,4,5
