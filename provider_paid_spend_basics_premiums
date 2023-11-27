@@ -366,6 +366,7 @@ basics as (
     and date(d.date) < date(current_date)
     and m.IsInternalAccount = 'false'
     and lower(m.role) = 'provider'
+    and lower(m.audience) = 'provider'
     and lower(m.campaign) in ('online', 'affiliate', 'sem')
     and lower(m.site) not like '%careu%'
   group by 1,2,3,4,5
@@ -408,6 +409,7 @@ premiums as (
     and t.amount > 0
     and m.IsInternalAccount = 'false'
     and lower(m.role) = 'provider'
+    and lower(m.audience) = 'provider'
     and year(d.date) >= year(now())-1
     and date(d.date) < date(current_date)
     and lower(m.campaign) in ('online', 'affiliate', 'sem')
