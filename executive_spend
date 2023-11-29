@@ -1,8 +1,5 @@
 select
   month,
-  role,
-  channel,
-  --sum(spend_fixed_current_fx_usd) as spend
   sum(case when channel = 'SEM' then spend_fixed_current_fx_usd end) as Total_SEM_Spend,
   sum(case when channel = 'SEM' and role = 'seeker' then spend_fixed_current_fx_usd end) as Seeker_SEM_Spend,
   sum(case when channel = 'SEM' and role = 'provider' then spend_fixed_current_fx_usd end) as Provider_SEM_Spend,
@@ -10,8 +7,8 @@ select
   sum(case when channel = 'Facebook' and role = 'seeker' then spend_fixed_current_fx_usd end) as Seeker_FB_Spend,
   sum(case when channel = 'Facebook' and role = 'provider' then spend_fixed_current_fx_usd end) as Provider_FB_Spend,
   sum(case when channel in ('QualityClick', 'QualityClick_Providers', 'Putzchecker', 'MiBaby', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact', 'Recruitics', 'RecruiticsFee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') then spend_fixed_current_fx_usd end) as Total_OO_Spend,
-  sum(case when channel in ('QualityClick', 'Putzchecker', 'MiBaby', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact') then spend_fixed_current_fx_usd end) as Seeker_OO_Spend,
-  sum(case when channel in ('QualityClick_Providers', 'Recruitics', 'RecruiticsFee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') then spend_fixed_current_fx_usd end) as Provider_OO_Spend, 
+  sum(case when channel in ('QualityClick', 'Putzchecker', 'MiBaby', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact') and role = 'seeker' then spend_fixed_current_fx_usd end) as Seeker_OO_Spend,
+  sum(case when channel in ('Awin', 'QualityClick_Providers', 'AllesKralle', 'AppCast', 'AppJobs', 'JobLift', 'MyPerfectJob', 'Recruitics', 'RecruiticsFee', 'StudentJob') and role = 'provider' then spend_fixed_current_fx_usd end) as Provider_OO_Spend, 
   sum(case when channel = 'TV' then spend_fixed_current_fx_usd end) as TV_Spend                                                    
 
 from
@@ -303,7 +300,7 @@ union
     case when rc.country in ('DE','') then 'de' 
          when rc.country = 'GB' then 'uk'
         else lower(rc.country) end as country, 
-    'Provider' as role, 'Recruitics' as channel, 'EUR' as currency,
+    'provider' as role, 'Recruitics' as channel, 'EUR' as currency,
     sum(rc.spend) as spend_domestic
   from intl.recruitics_spend_intl rc
     join reporting.DW_D_DATE d on date(rc.day) = d.date 
@@ -632,6 +629,5 @@ order by 1,2,3,4,5 desc
 ) abc
 
 where year = 2023
-and month = 10
 
-group by 1,2,3
+group by 1 order by 1 asc
