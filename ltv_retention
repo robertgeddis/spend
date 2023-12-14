@@ -53,7 +53,7 @@ from
                   --and s.priceplandurationinmonths = 1 -- NEEDS TO BE REMOVED
                 join intl.hive_member m on s.memberID = m.memberId and m.countrycode = t.country_code 
                   and m.IsInternalAccount = 'false'
-                  and m.role = 'seeker' -- NEEDS TO BE REMOVED
+                  --and m.role = 'seeker' -- NEEDS TO BE REMOVED
                   and m.countrycode in ('de', 'uk') -- NEEDS TO BE REMOVED
                   and lower(m.vertical) in ('childcare', 'petcare') -- NEEDS TO BE REMOVED
                   and m.countrycode not in ('es','fr')
@@ -71,8 +71,8 @@ from
              and Month_No < 37 -- ADD THIS ONE LATER ON, PERHAPS DIFFERENT NESTED QUERY
              and
             (
-              Subscription_Length = 3 and Month_No in (0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45) or
-              Subscription_Length = 1 and Month_No between 0 and 47 or
+              Subscription_Length = 3 and Month_No in (0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36) or
+              Subscription_Length = 1 and Month_No between 0 and 36 or
               Subscription_Length = 12 and Month_No in (0, 12, 24, 36)
               )
           group by 1,2,3,4,5,6,7
