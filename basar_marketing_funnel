@@ -209,8 +209,8 @@ fixed_current_fx as (
   
 select
   s.year, s.month, s.date,
-  s.country, s.category, s.channel,
-  s.currency, f.fx_rate,  
+  s.category as spend_category, s.channel as source,
+  s.country, s.currency, f.fx_rate,  
   ifnull(sum(s.spend * f.fx_rate),0) as Spend
   
 from spend s
