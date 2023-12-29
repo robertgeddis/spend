@@ -175,8 +175,15 @@ union
 union
 
 -- SPOTIFY (DE SEEKERS ONLY)
-  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Spotify' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency, sum(DE_SEEKER_SPOTIFY) as spend_domestic_currency 
-  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-4 group by 1,2,3,4,5,6,7,8,9,10 
+  select distinct
+    d.year, d.month, d.week_start_date, d.date,
+    'Seeker' as role, 'Other Online' as spend_category, 'Spotify' as source,
+    'intl.spotify_spend' as spend_table, 'DE' as country, 'EUR' as currency,
+    sum(spend) as spend_domestic_currency
+  from intl.spotify_spend sy
+  join reporting.DW_D_DATE d on date(sy.start_date) = d.date
+  where d.year >= year(now())-4
+	group by 1,2,3,4,5,6,7,8,9,10
 
 union
 
@@ -412,6 +419,12 @@ union
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on date(spend_date) = d.date where d.year >= year(now())-4 group by 1,2,3,4,5,6,7,8,9,10
   union
   select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'AllesKralle' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CH' as country, 'EUR' as currency,ifnull(sum(CH_PROVIDER_ALLESKRALLE),0) as spend_domestic_currency
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on date(spend_date) = d.date where d.year >= year(now())-4 group by 1,2,3,4,5,6,7,8,9,10
+  
+union
+
+-- KLEINANZEIGEN (DE Providers) *** Using DE_Provider_Nebenan column in intl.DW_MARKETING_SPEND_INTL
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Kleinanzeigen' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency,ifnull(sum(DE_Provider_Nebenan),0) as spend_domestic_currency
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on date(spend_date) = d.date where d.year >= year(now())-4 group by 1,2,3,4,5,6,7,8,9,10
   
 union
