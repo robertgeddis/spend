@@ -131,7 +131,7 @@ union
         when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
     from intl.transaction t
       join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
-        and year(sp.subscriptionDateCreated) >= year(current_date()) and date(sp.subscriptionDateCreated) < current_date()
+        and year(sp.subscriptionDateCreated) >= year(current_date())-1 and date(sp.subscriptionDateCreated) < date(current_date)
       join intl.hive_member m on t.member_id = m.memberid and t.country_code = sp.countrycode and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated)
         and m.IsInternalAccount is not true
         and lower(m.role) = 'seeker' and lower(m.audience) = 'seeker'
