@@ -194,9 +194,12 @@ union
 
 union
 
--- IMPACT (CA SEEKERS ONLY)
+-- IMPACT (CA + AU SEEKERS ONLY)
   select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Impact' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CA' as country, 'EUR' as currency, sum(CA_OTHER_ONLINE) as spend_domestic_currency 
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Impact' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_OTHER_ONLINE) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
   
 union
 
@@ -210,9 +213,9 @@ union
   select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AT' as country, 'EUR' as currency, sum(AT_OTHER_ONLINE) as spend_domestic_currency 
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
   union
-  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_OTHER_ONLINE) as spend_domestic_currency 
-  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
-  union
+  --select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_OTHER_ONLINE) as spend_domestic_currency 
+  --from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
+  --union
   select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'BE' as country, 'EUR' as currency, sum(BE_OTHER_ONLINE) as spend_domestic_currency 
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
   union
