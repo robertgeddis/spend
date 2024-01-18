@@ -206,7 +206,8 @@ union
 -- KLEINANZEIGEN (DE Seeker) *** Using DE_Seeker_Nebenan column in intl.DW_MARKETING_SPEND_INTL
   select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Kleinanzeigen' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency,ifnull(sum(DE_Seeker_Nebenan),0) as spend_domestic_currency
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on date(spend_date) = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10
-  
+
+/*  
 union
 
 -- SEEKER OTHER ONLINE FROM MANUAL MARKETING SPEND TABLE 
@@ -260,7 +261,7 @@ union
   union
   select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_OTHER_ONLINE) as spend_domestic_currency 
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
-          
+*/          
 union
 
 -- QUALITY CLICK (Providers)
@@ -443,7 +444,8 @@ union
 -- KLEINANZEIGEN (DE Providers) *** Using DE_Provider_Nebenan column in intl.DW_MARKETING_SPEND_INTL
   select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Kleinanzeigen' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency,ifnull(sum(DE_Provider_Nebenan),0) as spend_domestic_currency
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on date(spend_date) = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10
-  
+
+/*  
 union
 
 -- PROVIDER OTHER ONLINE FROM MANUAL MARKETING SPEND TABLE 
@@ -496,7 +498,8 @@ union
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
   union
   select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_PROVIDER) as spend_domestic_currency 
-  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+*/ 
 ),
 
 -- THIS IS FOR THE LIVE USD FX RATES. TOP HALF OF UNION JOIN IS BASED ON JAGAN'S MONTHLY AVERAGE FROM 2019 - 2022 SINCE THE LIVE FX TABLE IS ONLY FROM 2023.
