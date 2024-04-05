@@ -74,6 +74,7 @@ union
         and d.date < date(current_date)
       group by 1,2,3,4,5,6,7,8,9,10) qc
   group by 1,2,3,4,5,6,7,8,9,10
+  having sum(spend) > 0
   
 union
 
@@ -396,7 +397,8 @@ union
     'Provider' as role, 'Other Online' as spend_category, 'AppJobs' as source, 'intl.appjobs_spend' as spend_table,
     case when country = 'Germany' then 'DE'
          when country = 'Canada' then 'CA' 
-       end as country, 
+         when country = 'United Kingdom' then 'UK'
+       else country end as country,  
     'EUR' as currency,
     sum(total_spent_usd) as spend_domestic_currency           
   from intl.appjobs_spend aj
