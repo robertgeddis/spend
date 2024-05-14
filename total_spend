@@ -264,6 +264,51 @@ union
           
 union
 
+-- MICROSOFT SPEND FROM MANUAL MARKETING SPEND TABLE (SEEKER ONLY)  
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AT' as country, 'EUR' as currency, sum(AT_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'AU' as country, 'EUR' as currency, sum(AU_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'BE' as country, 'EUR' as currency, sum(BE_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CA' as country, 'EUR' as currency, sum(CA_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'CH' as country, 'EUR' as currency, sum(CH_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DE' as country, 'EUR' as currency, sum(DE_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'DK' as country, 'EUR' as currency, sum(DK_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'FI' as country, 'EUR' as currency, sum(FI_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'IE' as country, 'EUR' as currency, sum(IE_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NL' as country, 'EUR' as currency, sum(NL_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NO' as country, 'EUR' as currency, sum(NO_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'NZ' as country, 'EUR' as currency, sum(NZ_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'SE' as country, 'EUR' as currency, sum(SE_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+  union
+  select distinct d.year, d.month, d.week_start_date, d.date, 'Seeker' as role, 'SEM' as spend_category, 'Microsoft' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_Seeker_Microsoft) as spend_domestic_currency 
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10 
+
+union
+
 -- QUALITY CLICK (Providers)
   select distinct
     year, month, week_start_date, date,
@@ -498,7 +543,7 @@ union
   from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
   union
   select distinct d.year, d.month, d.week_start_date, d.date, 'Provider' as role, 'Other Online' as spend_category, 'Manual Spend Table' as source, 'intl.DW_MARKETING_SPEND_INTL' as spend_table, 'UK' as country, 'EUR' as currency, sum(UK_PROVIDER) as spend_domestic_currency 
-  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10  
+  from intl.DW_MARKETING_SPEND_INTL join reporting.DW_D_DATE d on spend_date = d.date where d.year >= year(now())-2 and d.date < date(current_date) group by 1,2,3,4,5,6,7,8,9,10      
 ),
 
 -- THIS IS FOR THE LIVE USD FX RATES. TOP HALF OF UNION JOIN IS BASED ON JAGAN'S MONTHLY AVERAGE FROM 2019 - 2022 SINCE THE LIVE FX TABLE IS ONLY FROM 2023.
