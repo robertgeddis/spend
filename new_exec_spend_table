@@ -1,0 +1,428 @@
+select distinct 
+  dd.date, dc.Current_Date_SameDay as date_current, dd.week_start_date,
+  ifnull(sum(case when source in ('SEM', 'Microsoft') then spend_usd end),0) as Total_SEM_Spend,
+  ifnull(sum(case when source in ('SEM', 'Microsoft') and role = 'seeker' then spend_usd end),0) as Seeker_SEM_Spend, 
+  ifnull(sum(case when source in ('SEM', 'Microsoft') and role = 'provider' then spend_usd end),0) as Provider_SEM_Spend, 
+  ifnull(sum(case when source = 'Facebook' then spend_usd end),0) as Total_FB_Spend, 
+  ifnull(sum(case when source = 'Facebook' and role = 'seeker' then spend_usd end),0) as Seeker_FB_Spend, 
+  ifnull(sum(case when source = 'Facebook' and role = 'provider' then spend_usd end),0) as Provider_FB_Spend,
+  ifnull(sum(case when source in ('Quality Click', 'Putzchecker', 'TikTok', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact', 'Kleinanzeigen',
+                           'Recruitics', 'Recrutics Fee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') then spend_usd end),0) as Total_OO_Spend,
+  ifnull(sum(case when source in ('Quality Click', 'Putzchecker', 'TikTok', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact', 'Kleinanzeigen',
+                           'Recruitics', 'Recrutics Fee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') and role = 'seeker' then spend_usd end),0) as Seeker_OO_Spend,
+  ifnull(sum(case when source in ('Quality Click', 'Putzchecker', 'TikTok', 'Awin', 'Meinestadt', 'Pinterest', 'Spotify', 'Impact', 'Kleinanzeigen',
+                           'Recruitics', 'Recrutics Fee', 'StudentJob', 'AppJobs', 'AppCast', 'MyPerfectJob', 'JobLift', 'AllesKralle') and role = 'provider' then spend_usd end),0) as Provider_OO_Spend,
+  ifnull(sum(case when source = 'TV' then spend_usd end),0) as TV_Spend                         
+
+from (
+  select distinct 
+    date, role, source, countrycode, 
+    sum(case when currency = 'EUR' then spend * fx.currency_rate 
+             when currency = 'AUD' then spend * fx.currency_rate
+             when currency = 'CAD' then spend * fx.currency_rate
+             when currency = 'GBP' then spend * fx.currency_rate end) as spend_usd
+  from (
+
+  -- SEM 
+    select distinct
+       date(date) as date,  
+       lower(campaign_type) as role, 
+       'SEM' as source, 
+       lower(country) as countrycode,
+       currency,
+       ifnull(sum(cost),0) as spend
+    from intl.dw_f_campaign_spend_intl
+    where year(date) >= year(now())-4
+      and date(date) < date(current_date) 
+      and country is not null
+    group by 1,2,3,4,5
+  
+  union
+
+  -- FACEBOOK
+    select distinct
+      date(date_start) as date,
+      lower(campaign_Type) as role,
+      'Facebook' as source, 
+      case when lower(country) = 'en' then 'ca' 
+           when lower(country) = '_'  then 'au' 
+           when lower(country) = 've'  then 'de' 
+        else lower(country) end as countrycode, 
+      currency,
+      ifnull(sum(spend),0) as spend
+    from intl.DW_F_FACEBOOK_SPEND_INTL
+    where year(date_start) >= year(now())-4
+      and date(date_start) < date(current_date)
+    group by 1,2,3,4,5 
+  
+  union
+  
+  -- QUALITY CLICK  
+    select distinct
+      date(day) as date,
+      case when (lower(product) like '%alltagshelfer%' or lower(product) like '%provider%') then 'provider' else 'seeker' end as role,
+      'Quality Click' as source,    
+      case when program in ('DE', 'AT', 'CH') then lower(program)
+           when product like '%FR%' then 'fr'
+           when product like '%BE_nl%' then 'be'  
+           when product like '%BE_fr%' then 'fb'  
+           when product like '%DK%' then 'dk'  
+           when product like '%FI%' then 'fi'  
+           when product like '%NL%' then 'nl'  
+           when product like '%SE%' then 'se'  
+           when product like '%IE%' then 'ie'  
+           when product like '%ES%' then 'es'  
+           when product like '%AU%' then 'au'  
+           when product like '%NO%' then 'no'
+           when product like '%NZ%' then 'nz'
+           when product like '%UK%' then 'uk'
+           when product like '%CA%' then 'ca'
+       end as countrycode, 
+      'EUR' as currency,
+       case when (lower(product) not like '%alltagshelfer%' or lower(product) not like '%provider%') then ifnull(sum(commission),0) 
+          else (sum(commission) + sum(currency)) end as 'spend'
+    from intl.quality_click_spend
+    where partnerid <> 435
+      and year(day) >= year(now())-4
+      and date(day) < date(current_date)
+    group by 1,2,3,4,5,product
+    having sum(commission) > 0
+  
+  union
+  
+  -- PUTZCHECKER  
+    select distinct
+      date(day) as date,
+      'seeker' as role,  
+      'Putzchecker' as source, 
+      'de' as countrycode, 
+      'EUR' as currency,
+      ifnull((sum(clicks)*1.5),0) as spend
+    from intl.quality_click_cpc
+    where year(day) >= year(now())-4
+      and date(day) < date(current_date)
+    group by 1,2,3,4,5 
+  
+  union
+  
+  -- TikTok 
+    select distinct spend_date as date, 'seeker' as role, 'TikTok' as source, 'de' as countrycode, 'EUR' as currency, ifnull(sum(DE_Seeker_Mibaby),0) as spend 
+    from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5 
+  
+  union
+
+  -- AWIN
+    select distinct
+      date(transaction_Date) as date,
+      case when commission_group_code in ('REG_P','REGP') then 'provider' else 'seeker' end as role,
+      'Awin' as source,  
+      case when advertiser_id = '10557' then 'de'
+           when advertiser_id = '10709' then 'at'   
+           when advertiser_id = '45671' then 'uk' 
+        end as countrycode,  
+    	case when advertiser_id in ('10557', '10709') then 'EUR' else 'GBP' end as currency,	   
+      ifnull((sum(commission_amount)*1.3),0) as spend
+    from intl.awin_spend 
+    where year(transaction_Date) >= year(now())-4
+        and date(transaction_Date) < date(current_date)
+        and lower(commissionStatus) in ('approved', 'pending')
+  	group by 1,2,3,4,5 
+  
+  union
+
+  -- MEINESTADT 
+    select distinct
+       date,
+       'seeker' as role,
+       'Meinestadt' as source, 
+       'de' as countrycode, 
+       'EUR' as currency,
+       ifnull(sum(case when spend.year = spend.current_year and spend.month = spend.current_month then ((spend)/current_days) else ((spend)/days_in_month) end),0) as spend 
+    from (
+      select distinct
+        year(sp.subscriptionDateCreated) as year,
+        month(sp.subscriptionDateCreated) as month,
+        date(sp.subscriptionDateCreated) as date,
+        date_part('day', last_day(sp.subscriptionDateCreated)) as days_in_month,
+        date_part('day', current_date()-1) as current_days,
+        month(current_date()-1) as current_month,
+        year(current_date()-1) as current_year,
+        count(distinct sp.subscriptionId) as premiums,
+        case when count(distinct sp.subscriptionId)<=150 then (count(distinct sp.subscriptionId)*80) 
+             when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
+      from intl.transaction t
+        join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
+          and year(sp.subscriptionDateCreated) >= year(current_date())-2 and date(sp.subscriptionDateCreated) < date(current_date)
+        join intl.hive_member m on t.member_id = m.memberid and t.country_code = sp.countrycode and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated)
+          and m.IsInternalAccount is not true
+          and lower(m.role) = 'seeker' and lower(m.audience) = 'seeker'
+          and lower(m.campaign) = 'online' and lower(m.site) = 'meinestadt.de' 
+      where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
+        and t.country_code = 'de'      
+        and year(t.date_created) >= year(now())-4 and date(t.date_created) < date(current_date)
+      group by 1,2,3,4,5,6,7
+      ) spend
+      group by 1,2,3,4,5 
+  
+  union 
+
+  -- PINTEREST 
+    select distinct spend_date as date, 'seeker' as role, 'Pinterest' as source, 'de' as countrycode, 'EUR' as currency, ifnull(sum(DE_Seeker_Pinterest),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5 
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Pinterest' as source, 'uk' as countrycode, 'EUR' as currency, ifnull(sum(UK_Seeker_Pinterest),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Pinterest' as source, 'ca' as countrycode, 'EUR' as currency, ifnull(sum(CA_Seeker_Pinterest),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Pinterest' as source, 'au' as countrycode, 'EUR' as currency, ifnull(sum(AU_Seeker_Pinterest),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+
+  union
+
+  -- TV  
+    select distinct
+      spend_date as date, 
+      'seeker' as role, 
+      'TV' as source, 
+      'de' as countrycode, 
+      'EUR' as currency,
+      ifnull(sum(DE_TV),0) as spend 
+    from intl.DW_MARKETING_SPEND_INTL
+    where year(spend_date) >= year(now())-4
+      and spend_date < date(current_date)
+    group by 1,2,3,4,5 
+  
+  union
+
+  -- SPOTIFY  
+    select distinct
+      date(start_date) as date,
+      'seeker' as role,
+      'Spotify' as source,
+      'de' as countrycode, 
+      'EUR' as currency,
+      ifnull(sum(spend),0) as spend 
+    from intl.spotify_spend 
+    where year(start_date) >= year(now())-4
+      and date(start_date) < date(current_date)
+  	group by 1,2,3,4,5 
+	
+  union
+
+  -- IMPACT  
+    select distinct spend_date as date, 'seeker' as role, 'Impact' as source, 'ca' as countrycode, 'EUR' as currency, ifnull(sum(CA_OTHER_ONLINE),0) as spend 
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5  
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Impact' as source, 'au' as countrycode, 'EUR' as currency, ifnull(sum(AU_OTHER_ONLINE),0) as spend 
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+
+  union
+
+  -- KLEINANZEIGEN 
+    select distinct spend_date as date, 'seeker' as role, 'Kleinanzeigen' as source, 'de' as country, 'EUR' as currency, ifnull(sum(DE_Seeker_Nebenan),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+
+  union
+
+  -- MICROSOFT 
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'at' as countrycode, 'EUR' as currency, ifnull(sum(AT_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5 
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'au' as countrycode, 'EUR' as currency, ifnull(sum(AU_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'be' as countrycode, 'EUR' as currency, ifnull(sum(BE_Seeker_Microsoft),0) as spend 
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'ca' as countrycode, 'EUR' as currency, ifnull(sum(CA_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'ch' as countrycode, 'EUR' as currency, ifnull(sum(CH_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'de' as countrycode, 'EUR' as currency, ifnull(sum(DE_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'dk' as countrycode, 'EUR' as currency, ifnull(sum(DK_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'fi' as countrycode, 'EUR' as currency, ifnull(sum(FI_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'ie' as countrycode, 'EUR' as currency, ifnull(sum(IE_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'nl' as countrycode, 'EUR' as currency, ifnull(sum(NL_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'no' as countrycode, 'EUR' as currency, ifnull(sum(NO_Seeker_Microsoft),0) as spend 
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5 
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'nz' as countrycode, 'EUR' as currency, ifnull(sum(NZ_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5 
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'se' as countrycode, 'EUR' as currency, ifnull(sum(SE_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'seeker' as role, 'Microsoft' as source, 'uk' as countrycode, 'EUR' as currency, ifnull(sum(UK_Seeker_Microsoft),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+
+  union 
+
+  -- RECRUITICS 
+    select distinct
+      date(day) as date, 
+      'provider' as role,
+      'Recruitics' as source, 
+      case when country in ('DE','') then 'de' 
+           when country = 'GB' then 'uk'
+          else lower(country) end as countrycode, 
+      'EUR' as currency,
+      sum(spend) as spend 
+    from intl.recruitics_spend_intl
+    where lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
+      and year(day) >= year(now())-4 
+      and date(day) < date(current_date)
+    group by 1,2,3,4,5 
+  
+  union
+
+  -- RECRUITICS FEE  
+  select 
+     date,
+    'provider' as role,
+    'Recrutics Fee' as source,
+    'de' as countrycode, 
+    currency,
+    ifnull(sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then ((commission)/current_days) else ((commission)/days_in_month) end),0) as spend
+  from
+      (select 
+        year(day) as year,
+        month(day) as month,
+        month(current_date()-1) as current_month,
+        year(current_date()-1) as current_year,
+        date_part('day', last_day(day)) as days_in_month,
+        date_part('day', current_date()-1) as current_days,
+        date(day) as date,
+        currency,
+        case when sum(spend) < '20000' then '2500'
+             when sum(spend) between '20000' and '30000' then '3000'
+             when sum(spend) between '30000' and '50000' then '3600'
+             when sum(spend) between '50000' and '80000' then '5000'
+             when sum(spend) > '80000' then '8000'
+          else '3500' end as commission 
+      from intl.recruitics_spend_intl
+      where year(day) >= year(now())-4 
+        and date(day) < date(current_date)
+        and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
+      group by 1,2,3,4,5,6,7,8) rc_fee
+  group by 1,2,3,4,5
+
+  union
+
+  -- STUDENT JOB (
+    select distinct
+      date(day) as date,
+      'provider' as role, 
+      'StudentJob' as source, 
+      case when program in ('DE', 'AT', 'CH') then lower(program)
+           when product like '%FR%' then 'fr'
+           when product like '%BE_nl%' then 'be'  
+           when product like '%BE_fr%' then 'fb'  
+           when product like '%DK%' then 'dk'  
+           when product like '%FI%' then 'fi'  
+           when product like '%NL%' then 'nl'  
+           when product like '%SE%' then 'se'  
+           when product like '%IE%' then 'ie'  
+           when product like '%ES%' then 'es'  
+           when product like '%AU%' then 'au'  
+           when product like '%NO%' then 'no'
+           when product like '%NZ%' then 'nz'
+           when product like '%UK%' then 'uk'
+           when product like '%CA%' then 'ca'
+         end as countrycode,
+        'EUR' as currency,                 
+      ifnull(sum(case when qc.program='DE' and year(day) <= 2022 then qc.count*2 
+               when qc.program='DE' and year(day) > 2022 then qc.count*3.5 
+               when qc.product like '%SE%' and year(day) <= 2022 then qc.count*2 
+               when qc.product like '%SE%' and year(day) > 2022 then qc.count*4
+               when qc.product like '%UK%' and year(day) <= 2022 then qc.count*1.5
+               when qc.product like '%UK%' and year(day) > 2022 then qc.count*3
+               when qc.product like '%NL%' then qc.count*3.5 
+               when qc.product like '%BE_nl%' and date(day) < '2022-05-01' then qc.count*1.5
+               when qc.product like '%BE_nl%' and date(day) >= '2022-05-01' then  qc.count*3.5
+           else qc.count*1 end),0) as spend      
+    from intl.quality_click_spend qc 
+    where partnerid = 435
+      and (product like '%Alltagshelfer%' or product like '%Provider%')
+      and year(day) >= year(now())-4   
+      and date(day) < date(current_date)
+    group by 1,2,3,4,5 
+  
+  union 
+
+  -- APP JOBS 
+    select distinct
+      date(day) as date,
+      'provider' as role,
+      'AppJobs' as source,
+      case when country = 'Germany' then 'DE'
+           when country = 'Canada' then 'CA' 
+           when country = 'United Kingdom' then 'UK'
+         else country end as countrycode,  
+      'EUR' as currency,
+      ifnull(sum(total_spent_usd),0) as spend           
+    from intl.appjobs_spend 
+    where year(day) >= year(now())-4   
+      and date(day) < date(current_date)
+    group by 1,2,3,4,5 
+  
+  union
+
+  -- APPCAST  
+    select distinct spend_date as date, 'provider' as role, 'AppCast' as source, 'de' as country, 'EUR' as currency, ifnull(sum(de_provider_appcast),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'provider' as role, 'AppCast' as source, 'uk' as country, 'GBP' as currency, ifnull(sum(uk_provider_appcast),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    
+  union 
+
+  -- MY PERFECT JOB 
+    select distinct spend_date as date, 'provider' as role, 'MyPerfectJob' as source, 'de' as country, 'EUR' as currency, ifnull(sum(DE_Provider_Myperfectjob),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+  
+  union
+
+  -- JOB LIFT 
+    select distinct spend_date as date, 'provider' as role, 'JobLift' as source, 'de' as country, 'EUR' as currency, ifnull(sum(DE_PROVIDER_JOBLIFT),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+  
+  union
+
+  -- ALLESKRALLE 
+    select distinct spend_date as date, 'provider' as role, 'AllesKralle' as source, 'de' as country, 'EUR' as currency, ifnull(sum(DE_PROVIDER_ALLESKRALLE),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'provider' as role, 'AllesKralle' as source, 'at' as country, 'EUR' as currency, ifnull(sum(AT_PROVIDER_ALLESKRALLE),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+    union
+    select distinct spend_date as date, 'provider' as role, 'AllesKralle' as source, 'ch' as country, 'EUR' as currency, ifnull(sum(CH_PROVIDER_ALLESKRALLE),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+  
+  union
+
+  -- KLEINANZEIGEN 
+    select distinct spend_date as date, 'provider' as role, 'Kleinanzeigen' as source, 'de' as country, 'EUR' as currency, ifnull(sum(DE_Provider_Nebenan),0) as spend
+      from intl.DW_MARKETING_SPEND_INTL where year(spend_date) >= year(now())-4 and spend_date < date(current_date) group by 1,2,3,4,5
+
+  ) abc
+  join reporting.DW_CARE_FX_RATES fx on fx.source_currency = abc.currency and fx.source_currency in ('EUR','GBP','CAD','AUD') and fx.target_currency = 'USD' and fx.currency_rate_type = 'Current'
+  group by 1,2,3,4
+) def
+join reporting.DW_D_DATE dd on def.date = dd.date
+join analytics.DW_D_DATE_CURRENT dc on dd.date = dc.date
+
+group by 1,2,3
