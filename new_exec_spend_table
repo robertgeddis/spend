@@ -131,28 +131,27 @@ from (
   union
 
   -- MEINESTADT 
-    select distinct
-       date,
-       'seeker' as role,
-       'Meinestadt' as source, 
-       'de' as countrycode, 
-       'EUR' as currency,
-       ifnull(sum(case when spend.year = spend.current_year and spend.month = spend.current_month then ((spend)/current_days) else ((spend)/days_in_month) end),0) as spend 
-    from (
+  select distinct
+     d.date,
+     'seeker' as role,
+     'Meinestadt' as source,
+     'de' as country, 
+     'EUR' as currency,
+     sum(case when spend.year = spend.current_year and spend.month = spend.current_month then ((spend)/current_days) else ((spend)/days_in_month) end) as spend_domestic_currency
+   from (
       select distinct
         year(sp.subscriptionDateCreated) as year,
         month(sp.subscriptionDateCreated) as month,
-        date(sp.subscriptionDateCreated) as date,
         date_part('day', last_day(sp.subscriptionDateCreated)) as days_in_month,
         date_part('day', current_date()-1) as current_days,
         month(current_date()-1) as current_month,
         year(current_date()-1) as current_year,
         count(distinct sp.subscriptionId) as premiums,
         case when count(distinct sp.subscriptionId)<=150 then (count(distinct sp.subscriptionId)*80) 
-             when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
+          when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
       from intl.transaction t
         join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
-          and year(sp.subscriptionDateCreated) >= year(current_date())-2 and date(sp.subscriptionDateCreated) < date(current_date)
+          and year(sp.subscriptionDateCreated) >= year(current_date())-4 and date(sp.subscriptionDateCreated) < date(current_date)
         join intl.hive_member m on t.member_id = m.memberid and t.country_code = sp.countrycode and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated)
           and m.IsInternalAccount is not true
           and lower(m.role) = 'seeker' and lower(m.audience) = 'seeker'
@@ -160,9 +159,10 @@ from (
       where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
         and t.country_code = 'de'      
         and year(t.date_created) >= year(now())-4 and date(t.date_created) < date(current_date)
-      group by 1,2,3,4,5,6,7
-      ) spend
-      group by 1,2,3,4,5 
+      group by 1,2,3,4,5,6
+    ) spend
+      join reporting.DW_D_DATE d on spend.year = d.year and spend.month = d.month and d.year >= year(now())-4 and d.date < date(current_date)
+   group by 1,2,3,4,5 
   
   union 
 
@@ -291,21 +291,20 @@ from (
 
   -- RECRUITICS FEE  
   select 
-     date,
-    'provider' as role,
+     d.date,
+    'provider' as role, 
     'Recrutics Fee' as source,
-    'de' as countrycode, 
+    'de' as country, 
     currency,
-    ifnull(sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then ((commission)/current_days) else ((commission)/days_in_month) end),0) as spend
+    sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then ((commission)/current_days) else ((commission)/days_in_month) end) as spend_domestic_currency
   from
       (select 
-        year(day) as year,
-        month(day) as month,
+        year(rc.day) as year,
+        month(rc.day) as month,
         month(current_date()-1) as current_month,
         year(current_date()-1) as current_year,
-        date_part('day', last_day(day)) as days_in_month,
+        date_part('day', last_day(rc.day)) as days_in_month,
         date_part('day', current_date()-1) as current_days,
-        date(day) as date,
         currency,
         case when sum(spend) < '20000' then '2500'
              when sum(spend) between '20000' and '30000' then '3000'
@@ -313,12 +312,12 @@ from (
              when sum(spend) between '50000' and '80000' then '5000'
              when sum(spend) > '80000' then '8000'
           else '3500' end as commission 
-      from intl.recruitics_spend_intl
-      where year(day) >= year(now())-4 
-        and date(day) < date(current_date)
+      from intl.recruitics_spend_intl rc
+      where year(rc.day) >= year(now())-4 
         and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
-      group by 1,2,3,4,5,6,7,8) rc_fee
-  group by 1,2,3,4,5
+      group by 1,2,3,4,5,6,7) rc_fee
+  join reporting.DW_D_DATE d on rc_fee.year = d.year and rc_fee.month = d.month and d.year >= year(now())-4 and d.date < date(current_date)
+  group by 1,2,3,4,5 
 
   union
 
