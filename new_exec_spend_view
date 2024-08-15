@@ -6,7 +6,7 @@ grant all on analytics.vw_INTL_Spend_v2 to reporting_ro, analytics_team;
 ;
 create view analytics.vw_INTL_Spend_v2 as
 select distinct 
-  dd.date, dc.Current_Date_SameDay as date_current, dd.week_start_date,
+  dd.date, dc.Current_Date_SameDay as date_current, dd.week_start_date, countrycode,
   ifnull(sum(case when source in ('SEM', 'Microsoft') then spend_usd end),0) as Total_SEM_Spend,
   ifnull(sum(case when source in ('SEM', 'Microsoft') and role = 'seeker' then spend_usd end),0) as Seeker_SEM_Spend, 
   ifnull(sum(case when source in ('SEM', 'Microsoft') and role = 'provider' then spend_usd end),0) as Provider_SEM_Spend, 
@@ -431,4 +431,4 @@ from (
 join reporting.DW_D_DATE dd on def.date = dd.date
 join analytics.DW_D_DATE_CURRENT dc on dd.date = dc.date
 
-group by 1,2,3
+group by 1,2,3,4
