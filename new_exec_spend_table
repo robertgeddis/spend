@@ -1,3 +1,10 @@
+select * from analytics.vw_INTL_Spend_v2 where year(date) = 2024;
+;
+drop view if exists analytics.vw_INTL_Spend_v2
+;
+grant all on analytics.vw_INTL_Spend_v2 to reporting_ro, analytics_team;
+;
+create view analytics.vw_INTL_Spend_v2 as
 select distinct 
   dd.date, dc.Current_Date_SameDay as date_current, dd.week_start_date,
   ifnull(sum(case when source in ('SEM', 'Microsoft') then spend_usd end),0) as Total_SEM_Spend,
