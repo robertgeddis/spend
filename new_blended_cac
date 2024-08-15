@@ -1,0 +1,344 @@
+with spend as (
+    select distinct 
+      Date, Country, source,
+      sum(case when currency = 'EUR' then spend * fx.currency_rate 
+               when currency = 'AUD' then spend * fx.currency_rate
+               when currency = 'CAD' then spend * fx.currency_rate
+               when currency = 'GBP' then spend * fx.currency_rate end) as spend_usd
+    from (
+
+    -- SEM 
+      select distinct
+         date(date) as date, 
+         case when source_type <> 'GDN' and source <> 'YT' then 'SEM' 
+              when source_type = 'GDN' then 'GDN'
+              when source = 'YT' then 'YouTube'
+          end as source,   
+         upper(country) as country, 
+         currency,
+         sum(cost) as spend
+      from intl.dw_f_campaign_spend_intl 
+      where year(date) >= year(now())-2
+        and date(date) < date(current_date) 
+        and country is not null
+        and lower(campaign_type) = 'seeker'
+      group by 1,2,3,4
+  
+    union
+
+    -- MICROSOFT SPEND FROM MANUAL MARKETING SPEND TABLE  
+      select distinct spend_date as date, 'Microsoft' as source, 'AT' as country, 'EUR' as currency, sum(AT_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'AU' as country, 'EUR' as currency, sum(AU_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'BE' as country, 'EUR' as currency, sum(BE_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'CA' as country, 'EUR' as currency, sum(CA_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'CH' as country, 'EUR' as currency, sum(CH_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'DE' as country, 'EUR' as currency, sum(DE_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'DK' as country, 'EUR' as currency, sum(DK_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'FI' as country, 'EUR' as currency, sum(FI_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'IE' as country, 'EUR' as currency, sum(IE_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'NL' as country, 'EUR' as currency, sum(NL_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'NO' as country, 'EUR' as currency, sum(NO_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'NZ' as country, 'EUR' as currency, sum(NZ_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'SE' as country, 'EUR' as currency, sum(SE_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Microsoft' as source, 'UK' as country, 'EUR' as currency, sum(UK_Seeker_Microsoft) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+ 
+    union
+
+    -- FACEBOOK
+      select distinct
+        date(date_start) as date,
+        'Facebook' as source, 
+        case when upper(country) = 'EN' then 'CA' 
+             when upper(country) = '_'  then 'AU' 
+             when upper(country) = 'VE'  then 'DE' 
+          else upper(country) end as country, 
+        currency,
+        sum(spend) as spend 
+      from intl.DW_F_FACEBOOK_SPEND_INTL
+      where year(date_start) >= year(now())-2
+        and date(date_start) < date(current_date)
+        and lower(campaign_Type) = 'seeker' 
+      group by 1,2,3,4 
+  
+    union
+
+    -- QUALITY CLICK 
+      select distinct
+        date(day) as date,
+        'Quality Click' as source,   
+        case when program in ('DE', 'AT', 'CH') then program
+              when product like '%FR%' then 'FR'
+              when product like '%BE_nl%' then 'BE'  
+              when product like '%BE_fr%' then 'FB'  
+              when product like '%DK%' then 'DK'  
+              when product like '%FI%' then 'FI'  
+              when product like '%NL%' then 'NL'  
+              when product like '%SE%' then 'SE'  
+              when product like '%IE%' then 'IE'  
+              when product like '%ES%' then 'ES'  
+              when product like '%AU%' then 'AU'  
+              when product like '%NO%' then 'NO'
+              when product like '%NZ%' then 'NZ'
+              when product like '%UK%' then 'UK'
+              when product like '%CA%' then 'CA'
+         end as country, 
+        'EUR' as currency,
+         sum(commission) as spend
+      from intl.quality_click_spend qc
+      where partnerid <> 435
+        and lower(product) not like '%alltagshelfer%'
+        and lower(product) not like '%provider%' 
+        and year(day) >= year(now())-2
+        and date(day) < date(current_date)
+      group by 1,2,3,4  
+      having sum(commission) > 0
+  
+    union
+
+    -- PUTZCHECKER 
+      select 
+        date(day) as date,
+        'Putzchecker' as source, 
+        'DE' as country, 
+        'EUR' as currency,
+        ifnull((sum(clicks)*1.5),0) as spend 
+      from intl.quality_click_cpc
+      where year(day) >= year(now())-2
+        and date(day) < date(current_date)
+      group by 1,2,3,4 
+  
+    union
+
+    -- TikTok  
+      select distinct spend_date as date, 'TikTok' as source, 'DE' as country, 'EUR' as currency, sum(DE_Seeker_Mibaby) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+
+    union
+
+    -- AWIN
+      select distinct
+        date(transaction_Date) as date,
+        'Awin' as source, 
+        case when advertiser_id = '10557' then 'DE'
+             when advertiser_id = '10709' then 'AT'   
+             when advertiser_id = '45671' then 'UK' 
+          end as country,  
+      	case when advertiser_id in ('10557', '10709') then 'EUR' else 'GBP' end as currency,	   
+        ifnull((sum(commission_amount)*1.3),0) as spend
+      from intl.awin_spend aw
+      where year(transaction_Date) >= year(now())-2
+          and date(transaction_Date) < date(current_date)
+          and lower(commissionStatus) in ('approved', 'pending')
+          and commission_group_code not in ('REG_P','REGP') 
+    	group by 1,2,3,4 
+	
+    union
+
+    -- MEINESTADT (DE Seekers)
+     select distinct
+         d.date,
+         'Meinestadt' as source,
+         'DE' as country, 
+         'EUR' as currency,
+         sum(case when spend.year = spend.current_year and spend.month = spend.current_month then ((spend)/current_days) else ((spend)/days_in_month) end) as spend_domestic_currency
+       from (
+          select distinct
+            year(sp.subscriptionDateCreated) as year,
+            month(sp.subscriptionDateCreated) as month,
+            date_part('day', last_day(sp.subscriptionDateCreated)) as days_in_month,
+            date_part('day', current_date()-1) as current_days,
+            month(current_date()-1) as current_month,
+            year(current_date()-1) as current_year,
+            count(distinct sp.subscriptionId) as premiums,
+            case when count(distinct sp.subscriptionId)<=150 then (count(distinct sp.subscriptionId)*80) 
+              when count(distinct sp.subscriptionId)>150 then (150*80)+((count(distinct sp.subscriptionId)-150)*120) end as 'Spend' 
+          from intl.transaction t
+            join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
+              and year(sp.subscriptionDateCreated) >= year(current_date())-2 and date(sp.subscriptionDateCreated) < date(current_date)
+            join intl.hive_member m on t.member_id = m.memberid and t.country_code = sp.countrycode and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated)
+              and m.IsInternalAccount is not true
+              and lower(m.role) = 'seeker' and lower(m.audience) = 'seeker'
+              and lower(m.campaign) = 'online' and lower(m.site) = 'meinestadt.de' 
+          where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
+            and t.country_code = 'de'      
+            and year(t.date_created) >= year(now())-2 and date(t.date_created) < date(current_date)
+          group by 1,2,3,4,5,6
+        ) spend
+          join reporting.DW_D_DATE d on spend.year = d.year and spend.month = d.month and d.year >= year(now())-2 and d.date < date(current_date)
+       group by 1,2,3,4 
+      
+    union   
+
+    -- PINTEREST 
+      select distinct spend_date as date, 'Pinterest' as source, 'DE' as country, 'EUR' as currency, sum(DE_Seeker_Pinterest) as spend from intl.DW_MARKETING_SPEND_INTL
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+      union
+      select distinct spend_date as date, 'Pinterest' as source, 'UK' as country, 'EUR' as currency, sum(UK_Seeker_Pinterest) as spend from intl.DW_MARKETING_SPEND_INTL
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+      union
+      select distinct spend_date as date, 'Pinterest' as source, 'CA' as country, 'EUR' as currency, sum(CA_Seeker_Pinterest) as spend from intl.DW_MARKETING_SPEND_INTL
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+      union
+      select distinct spend_date as date, 'Pinterest' as source, 'AU' as country, 'EUR' as currency, sum(AU_Seeker_Pinterest) as spend from intl.DW_MARKETING_SPEND_INTL
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4
+
+    union
+
+    -- TV (DE Seekers)
+      select distinct
+        spend_date as date,
+        'TV' as source, 
+        'DE' as country, 
+        'EUR' as currency,
+        sum(DE_TV) as spend
+      from intl.DW_MARKETING_SPEND_INTL
+      where year(spend_date) >= year(now())-2
+        and date(spend_date) < date(current_date)
+      group by 1,2,3,4 
+  
+    union
+
+    -- SPOTIFY (DE SEEKERS ONLY)
+      select distinct
+        date(start_date) as date,
+        'Spotify' as source,
+        'DE' as country, 
+        'EUR' as currency,
+        sum(spend) as spend 
+      from intl.spotify_spend  
+      where year(start_date) >= year(now())-2
+        and start_date < date(current_date)
+    	group by 1,2,3,4
+
+    union
+
+    -- IMPACT (CA + AU SEEKERS ONLY)
+      select distinct spend_date as date, 'Impact' as source, 'CA' as country, 'EUR' as currency, sum(CA_OTHER_ONLINE) as spend from intl.DW_MARKETING_SPEND_INTL 
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4  
+      union
+      select distinct spend_date as date, 'Impact' as source, 'AU' as country, 'EUR' as currency, sum(AU_OTHER_ONLINE) as spend from intl.DW_MARKETING_SPEND_INTL  
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4   
+  
+    union
+
+    -- KLEINANZEIGEN  
+      select distinct spend_date as date, 'Kleinanzeigen' as source, 'DE' as country, 'EUR' as currency, sum(DE_Seeker_Nebenan) as spend from intl.DW_MARKETING_SPEND_INTL
+        where year(spend_date) >= year(now())-2 and spend_date < date(current_date) group by 1,2,3,4 
+    
+    ) spend
+    join reporting.DW_CARE_FX_RATES fx on fx.source_currency = spend.currency and fx.source_currency in ('EUR','GBP','CAD','AUD') and fx.target_currency = 'USD' and fx.currency_rate_type = 'Current'
+    group by 1,2,3
+),
+
+premiums as (
+  select distinct
+    date(sp.subscriptionDateCreated) as date, 
+    upper(m.countrycode) as Country,
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) then sp.subscriptionId end) as 'New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) = 'sem' and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'SEM_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.audience) = 'provider' then sp.subscriptionId end) as 'ProviderHalo_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and (
+      (lower(m.campaign) = 'seo' and lower(m.audience) <> 'provider') --SEO
+      or (lower(m.campaign) = 'email' and lower(m.audience) <> 'provider') --Email
+    )then sp.subscriptionId end) as 'Organic_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) = 'email' and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'Email_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and (lower(m.site) like 'careus%' or lower(m.campaign) in ('onsite','direct')) and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'Direct_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.howDidYouHear = 'tv' then sp.subscriptionId end) as 'TV_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and (m.howDidYouHear = 'audioStream' or lower(m.site) = 'spotify') then sp.subscriptionId end) as 'Spotify_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'Facebook' and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'Facebook_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'Youtube' and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'YT_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'GDN' and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'GDN_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower (m.campaign) in ('affiliate','online') and m.site not in ('Facebook','Youtube','GDN') 
+      and lower(m.site) not like 'careus%' and lower(m.audience) <> 'provider' then sp.subscriptionId end) as 'Other_New_Seeker_Premiums',
+    count(distinct case when m.role = 'seeker' and date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) then sp.subscriptionId end) as 'Seeker_Reupgrades'
+  from intl.transaction t
+    join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
+      and year(sp.subscriptionDateCreated)>=year(now())-2
+      and date(sp.subscriptionDateCreated) < date(current_date)
+    join intl.hive_member m on t.member_id=m.memberid and t.country_code=m.countrycode and m.isinternalaccount is false
+      and lower(m.role) = 'seeker' 
+  where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status='SUCCESS' and t.amount > 0
+  group by 1,2
+),
+
+plan_numbers as (
+  select distinct
+    date,
+    upper(countrycode) as Country,
+    sum(Plan_New_Seeker_SEM_Premiums) as 'Plan_New_Seeker_SEM_Premiums',
+    sum(Plan_New_Seeker_FB_Premiums) as 'Plan_New_Seeker_FB_Premiums',
+    sum(Plan_New_Seeker_OtherOnline_Premiums) as 'Plan_New_Seeker_OO_Premiums',
+    sum(Plan_New_Seeker_SEO_Premiums+Plan_New_Seeker_Direct_Premiums) as 'Plan_New_Seeker_Organic_Premiums',
+    sum(Plan_Seeker_Reupgrades) as 'Plan_Total_Reupgrades',
+    sum(Plan_SEM_Seeker_Spend) as 'Plan_SEM_Seeker_Spend',
+    sum(Plan_Seeker_Spend) as 'Plan_Seeker_Spend'
+  from analytics.intl_daily_snapshot_forecast
+  group by 1,2
+)
+
+select distinct
+  coalesce(sp.date, pm.date, pl.date) as date,
+  coalesce(sp.country, pm.country, pl.country) as country,
+  
+  ifnull(sum(Plan_New_Seeker_SEM_Premiums),0) as Plan_New_Seeker_SEM_Premiums,
+  ifnull(sum(Plan_New_Seeker_FB_Premiums),0) as Plan_New_Seeker_FB_Premiums,
+  ifnull(sum(Plan_New_Seeker_OO_Premiums),0) as Plan_New_Seeker_OO_Premiums,
+  ifnull(sum(Plan_New_Seeker_Organic_Premiums),0) as Plan_New_Seeker_Organic_Premiums,
+  ifnull(sum(Plan_Total_Reupgrades),0) as Plan_Total_Reupgrades,
+  ifnull(sum(Plan_SEM_Seeker_Spend),0) as Plan_SEM_Seeker_Spend,
+  ifnull(sum(Plan_Seeker_Spend),0) as Plan_Seeker_Spend,
+
+  sum(case when source = 'TV' then spend_usd else 0 end) as SpendTV,
+  sum(case when source = 'Spotify' then spend_usd else 0 end) as SpendSpotify,
+  sum(case when source in ('SEM', 'Microsoft') then spend_usd else 0 end) as SpendSEM,
+  sum(case when source = 'YouTube' then spend_usd else 0 end) as SpendYouTube,
+  sum(case when source = 'GDN' then spend_usd else 0 end) as SpendGDN,
+  sum(case when source = 'Facebook' then spend_usd else 0 end) as SpendFacebook, 
+  sum(case when source in ('Quality Click','Putzchecker','TikTok','Awin','Meinestadt','Pinterest','Impact','Kleinanzeigen') then spend_usd else 0 end) as SpendOO,
+  
+  ifnull(sum(New_Seeker_Premiums),0) as New_Seeker_Premiums,
+  ifnull(sum(SEM_New_Seeker_Premiums),0) as SEM_New_Seeker_Premiums,
+  ifnull(sum(Organic_New_Seeker_Premiums),0) as Organic_New_Seeker_Premiums,
+  ifnull(sum(Direct_New_Seeker_Premiums),0) as Direct_New_Seeker_Premiums,
+  ifnull(sum(TV_New_Seeker_Premiums),0) as TV_New_Seeker_Premiums,
+  ifnull(sum(Spotify_New_Seeker_Premiums),0) as Spotify_New_Seeker_Premiums,
+  ifnull(sum(Facebook_New_Seeker_Premiums),0) as Facebook_New_Seeker_Premiums,
+  ifnull(sum(YT_New_Seeker_Premiums),0) as YT_New_Seeker_Premiums,
+  ifnull(sum(GDN_New_Seeker_Premiums),0) as GDN_New_Seeker_Premiums,
+  ifnull(sum(Seeker_Reupgrades),0) as Seeker_Reupgrades,
+  ifnull(sum(Email_New_Seeker_Premiums),0) as Email_New_Seeker_Premiums,
+  ifnull(sum(ProviderHalo_New_Seeker_Premiums),0) as ProviderHalo_New_Seeker_Premiums,
+  ifnull(sum(Other_New_Seeker_Premiums),0) as Other_New_Seeker_Premiums
+  
+from spend sp
+full outer join premiums      pm on sp.date = pm.date and sp.country = pm.country 
+full outer join plan_numbers  pl on sp.date = pl.date and sp.country = pl.country
+
+group by 1,2
