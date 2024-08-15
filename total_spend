@@ -69,7 +69,8 @@ union
       from intl.quality_click_spend qc
         join reporting.DW_D_DATE d on date(day) = d.date
       where partnerid<>435
-        and (lower(product) not like '%alltagshelfer%' or lower(product) not like '%provider%') -- Assigned default to seekers as discussed with Fabian
+        and lower(product) not like '%alltagshelfer%' 
+        and lower(product) not like '%provider%' -- Assigned default to seekers as discussed with Fabian
         and d.year >= year(now())-2
         and d.date < date(current_date)
       group by 1,2,3,4,5,6,7,8,9,10) qc
