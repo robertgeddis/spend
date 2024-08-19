@@ -53,7 +53,7 @@ from (
       'Facebook' as source, 
       case when lower(country) = 'en' then 'ca' 
            when lower(country) = '_'  then 'au' 
-           when lower(country) = 've'  then 'de' 
+           when lower(country) in ('ve', 'po')  then 'de' 
         else lower(country) end as countrycode, 
       currency,
       ifnull(sum(spend),0) as spend
