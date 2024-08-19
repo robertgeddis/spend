@@ -26,7 +26,7 @@ union
     initcap(campaign_Type) as role, 'Social' as spend_category, 'Facebook' as source, 'intl.DW_F_FACEBOOK_SPEND_INTL' as spend_table,
     case when upper(country) = 'EN' then 'CA' 
          when upper(country) = '_'  then 'AU' 
-         when upper(country) = 'VE'  then 'DE' 
+         when upper(country) in ('VE', 'PO')  then 'DE' 
       else upper(country) end as country, 
     fb.currency,
     ifnull(sum(spend),0) as spend_domestic_currency
