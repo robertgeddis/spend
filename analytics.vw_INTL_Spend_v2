@@ -1,10 +1,3 @@
-select * from analytics.vw_INTL_Spend_v2 where year(date) = 2024;
-;
-drop view if exists analytics.vw_INTL_Spend_v2
-;
-grant all on analytics.vw_INTL_Spend_v2 to reporting_ro, analytics_team;
-;
-create view analytics.vw_INTL_Spend_v2 as
 select distinct 
   dd.date, dc.Current_Date_SameDay as date_current, dd.week_start_date, countrycode,
   ifnull(sum(case when source in ('SEM', 'Microsoft') then spend_usd end),0) as Total_SEM_Spend,
@@ -374,10 +367,10 @@ from (
       date(day) as date,
       'provider' as role,
       'AppJobs' as source,
-      case when country = 'Germany' then 'DE'
-           when country = 'Canada' then 'CA' 
-           when country = 'United Kingdom' then 'UK'
-         else country end as countrycode,  
+      case when country = 'Germany' then 'de'
+           when country = 'Canada' then 'ca' 
+           when country = 'United Kingdom' then 'uk'
+         else lower(country) end as countrycode,  
       'EUR' as currency,
       ifnull(sum(total_spent_usd),0) as spend           
     from intl.appjobs_spend 
