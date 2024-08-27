@@ -273,25 +273,27 @@ premiums as (
   select
     date(sp.subscriptionDateCreated) as date, 
     case when upper(m.countrycode) in ('DE', 'AT', 'CH', 'UK', 'CA', 'AU') then upper(m.countrycode) else 'Others' end as country, 
-    count(distinct sp.subscriptionId end) as Total_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) then sp.subscriptionId end) as New_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and (lower(m.campaign) not in ('direct', 'seo', 'email', 'onsite', 'wps', 'b2b') or m.campaign is not null or m.campaign <> '') then sp.subscriptionId end) as Paid_New_Premiums,   
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) in ('direct', 'seo', 'email', 'onsite') then sp.subscriptionId end) as Organic_New_Premiums, 
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) = 'sem' then sp.subscriptionId end) as SEM_New_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) in ('online', 'influencer', 'affiliate') then sp.subscriptionId end) as OO_New_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'Youtube' then sp.subscriptionId end) as YT_New_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'GDN' then sp.subscriptionId end) as Display_New_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'Facebook' then sp.subscriptionId end) as Facebook_New_Premiums,
-    count(distinct case when date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) then sp.subscriptionId end) as Reupgrades,
-    count(distinct case when date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) and (lower(m.campaign) not in ('direct', 'seo', 'email', 'onsite', 'wps', 'b2b') or m.campaign is not null or m.campaign <> '') then sp.subscriptionId end) as Paid_Reupgrades,
-    count(distinct case when date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) and lower(m.campaign) in ('direct', 'seo', 'email', 'onsite') then sp.subscriptionId end) as Organic_Reupgrades
+    count(distinct case when lower(m.audience) <> 'provider' then sp.subscriptionId end) as Total_Premiums,
+    count(distinct case when lower(m.audience) = 'provider' then sp.subscriptionId end) as Provider_Halo_Premiums,
+    count(distinct case when lower(m.audience) = 'provider' and lower(m.campaign) not in ('direct', 'seo', 'email', 'onsite', 'wps', 'b2b') then sp.subscriptionId end) as Paid_Provider_Halo_Premiums,
+    count(distinct case when lower(m.audience) = 'provider' and lower(m.campaign) in ('direct', 'seo', 'email', 'onsite') then sp.subscriptionId end) as Organic_Provider_Halo_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) then sp.subscriptionId end) as New_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) not in ('direct', 'seo', 'email', 'onsite', 'wps', 'b2b') then sp.subscriptionId end) as Paid_New_Premiums,   
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) in ('direct', 'seo', 'email', 'onsite') then sp.subscriptionId end) as Organic_New_Premiums, 
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) = 'sem' then sp.subscriptionId end) as SEM_New_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and lower(m.campaign) in ('online', 'influencer', 'affiliate') then sp.subscriptionId end) as OO_New_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'Youtube' then sp.subscriptionId end) as YT_New_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'GDN' then sp.subscriptionId end) as Display_New_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) = date(sp.subscriptionDateCreated) and m.site = 'Facebook' then sp.subscriptionId end) as Facebook_New_Premiums,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) then sp.subscriptionId end) as Reupgrades,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) and lower(m.campaign) not in ('direct', 'seo', 'email', 'onsite', 'wps', 'b2b') then sp.subscriptionId end) as Paid_Reupgrades,
+    count(distinct case when lower(m.audience) <> 'provider' and date(m.dateFirstPremiumSignup) != date(sp.subscriptionDateCreated) and lower(m.campaign) in ('direct', 'seo', 'email', 'onsite') then sp.subscriptionId end) as Organic_Reupgrades
   from intl.transaction t
     join intl.hive_subscription_plan sp on sp.subscriptionId = t.subscription_plan_id and sp.countrycode = t.country_code
       and year(sp.subscriptionDateCreated) = year(now()) and date(sp.subscriptionDateCreated) < date(current_date)
     join intl.hive_member m on t.member_id = m.memberid and t.country_code = m.countrycode 
       and m.isinternalaccount = 'false'
       and lower(m.role) = 'seeker' 
-      and lower(m.audience) <> 'provider'
   where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
   group by 1,2
 )
@@ -309,6 +311,10 @@ select
   ifnull(sum(Other_Online_Spend),0) as Other_Online_Spend,
   
   ifnull(sum(Total_Premiums),0) as Total_Premiums,
+  ifnull(sum(Provider_Halo_Premiums),0) as Provider_Halo_Premiums,
+  ifnull(sum(Paid_Provider_Halo_Premiums),0) as Paid_Provider_Halo_Premiums,
+  ifnull(sum(Organic_Provider_Halo_Premiums),0) as Organic_Provider_Halo_Premiums,
+  
   ifnull(sum(New_Premiums),0) as New_Premiums,
   ifnull(sum(Paid_New_Premiums),0) as Paid_New_Premiums,
   ifnull(sum(Organic_New_Premiums),0) as Organic_New_Premiums,
