@@ -273,7 +273,7 @@ premiums as (
   select
     date(sp.subscriptionDateCreated) as date, 
     case when upper(m.countrycode) in ('DE', 'AT', 'CH', 'UK', 'CA', 'AU') then upper(m.countrycode) else 'Others' end as country, 
-    count(distinct case when lower(m.audience) <> 'provider' then sp.subscriptionId end) as Total_Premiums,
+    count(distinct sp.subscriptionId) as Total_Premiums,
     count(distinct case when lower(m.audience) = 'provider' then sp.subscriptionId end) as Provider_Halo_Premiums,
     count(distinct case when lower(m.audience) = 'provider' and lower(m.campaign) not in ('direct', 'seo', 'email', 'onsite', 'wps', 'b2b') then sp.subscriptionId end) as Paid_Provider_Halo_Premiums,
     count(distinct case when lower(m.audience) = 'provider' and lower(m.campaign) in ('direct', 'seo', 'email', 'onsite') then sp.subscriptionId end) as Organic_Provider_Halo_Premiums,
@@ -296,11 +296,32 @@ premiums as (
       and lower(m.role) = 'seeker' 
   where t.type in ('PriorAuthCapture','AuthAndCapture') and t.status = 'SUCCESS' and t.amount > 0
   group by 1,2
+),
+
+plan_data as (
+  select
+    date,
+    case when countrycode = 'dk' then 'Others' else upper(countrycode) end as country,
+    sum(Plan_Seeker_Spend) as Plan_Spend,
+    sum(Plan_SEM_Seeker_Spend) as Plan_SEM_Spend,
+    round(sum(Plan_Seeker_AllPremiums)) as Plan_Total_Premiums,
+    round(sum(Plan_New_Seeker_Premiums)) as Plan_New_Premiums,
+    round(sum(Plan_New_Seeker_SEO_Premiums+Plan_New_Seeker_Direct_Premiums)) as Plan_New_Organic_Premiums,
+    round(sum(Plan_New_Seeker_SEM_Premiums+Plan_New_Seeker_OtherOnline_Premiums+Plan_New_Seeker_FB_Premiums)) as Plan_New_Paid_Premiums,
+    round(sum(Plan_New_Seeker_SEM_Premiums)) as Plan_New_SEM_Premiums,
+    round(sum(Plan_New_Seeker_OtherOnline_Premiums+Plan_New_Seeker_FB_Premiums)) as Plan_New_Online_Premiums,
+    round(sum(Plan_New_Seeker_FB_Premiums)) as Plan_New_Facebook_Premiums,
+    round(sum(Plan_New_Seeker_OtherOnline_Premiums)) as Plan_New_OO_Premiums,
+    round(sum(Plan_Seeker_Reupgrades)) as Plan_Reupgrades,
+    round(sum(Plan_Seeker_SEM_Reupgrades+Plan_Seeker_Online_Reupgrades)) as Plan_Paid_Reupgrades,
+    round(sum(Plan_Seeker_SEO_Reupgrades+Plan_Seeker_Direct_Reupgrades)) as Plan_Organic_Reupgrades
+  from analytics.intl_daily_snapshot_forecast
+  group by 1,2
 )
 
 select
-  coalesce(sp.date, pm.date) as date,
-  coalesce(sp.country, pm.country) as country,
+  coalesce(sp.date, pm.date, pd.date) as date,
+  coalesce(sp.country, pm.country, pd.country) as country,
   
   ifnull(sum(Total_Spend),0) as Total_Spend,
   ifnull(sum(SEM_Spend),0) as SEM_Spend,
@@ -325,9 +346,24 @@ select
   ifnull(sum(Facebook_New_Premiums),0) as Facebook_New_Premiums,
   ifnull(sum(Reupgrades),0) as Reupgrades,
   ifnull(sum(Paid_Reupgrades),0) as Paid_Reupgrades,
-  ifnull(sum(Organic_Reupgrades),0) as Organic_Reupgrades
+  ifnull(sum(Organic_Reupgrades),0) as Organic_Reupgrades,
+  
+  ifnull(sum(Plan_Spend),0) as Plan_Spend,
+  ifnull(sum(Plan_SEM_Spend),0) as Plan_SEM_Spend,
+  ifnull(sum(Plan_Total_Premiums),0) as Plan_Total_Premiums,
+  ifnull(sum(Plan_New_Premiums),0) as Plan_New_Premiums,
+  ifnull(sum(Plan_New_Organic_Premiums),0) as Plan_New_Organic_Premiums,
+  ifnull(sum(Plan_New_Paid_Premiums),0) as Plan_New_Paid_Premiums,
+  ifnull(sum(Plan_New_SEM_Premiums),0) as Plan_New_SEM_Premiums,
+  ifnull(sum(Plan_New_Online_Premiums),0) as Plan_New_Online_Premiums,
+  ifnull(sum(Plan_New_Facebook_Premiums),0) as Plan_New_Facebook_Premiums,
+  ifnull(sum(Plan_New_OO_Premiums),0) as Plan_New_OO_Premiums,
+  ifnull(sum(Plan_Reupgrades),0) as Plan_Reupgrades,
+  ifnull(sum(Plan_Paid_Reupgrades),0) as Plan_Paid_Reupgrades,
+  ifnull(sum(Plan_Organic_Reupgrades),0) as Plan_Organic_Reupgrades
 
 from spend sp
 full outer join premiums pm   on sp.date = pm.date and sp.country = pm.country
+full outer join plan_data pd  on sp.date = pd.date and sp.country = pd.country
 
 group by 1,2
