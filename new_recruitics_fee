@@ -1,9 +1,10 @@
+-- RECRUITICS FEE (DE Providers Only)
 select 
   d.year, d.month, d.week_start_date, d.date,
   'Provider' as role, 'Other Online' as spend_category, 'Recrutics Fee' as source, 'Query' as spend_table, 'DE' as country, currency,
   sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then ((commission)/current_days) else ((commission)/days_in_month) end) as spend_domestic_currency
 from
-    (select 
+    (select distinct
       year(rc.day) as year,
       month(rc.day) as month,
       month(current_date()-1) as current_month,
@@ -11,19 +12,24 @@ from
       date_part('day', last_day(rc.day)) as days_in_month,
       date_part('day', current_date()-1) as current_days,
       currency,
-       case when sum(spend) < '19999' then '4000'
-           when sum(spend) between '20000' and '29999' and (sum(spend)*0.115) < '3000' then '4500'
-           when sum(spend) between '20000' and '29999' and (sum(spend)*0.115) > '3000' then ((sum(spend)*0.115)+1500)    
-           when sum(spend) between '30000' and '49999' and (sum(spend)*0.105) < '3600' then '5100' 
-           when sum(spend) between '30000' and '49999' and (sum(spend)*0.105) > '3600' then ((sum(spend)*0.105)+1500)
-           when sum(spend) between '50000' and '79999' and (sum(spend)*0.09) < '5000' then '6500'
-           when sum(spend) between '50000' and '79999' and (sum(spend)*0.09) > '5000' then ((sum(spend)*0.09)+1500)
-           when sum(spend) >= '80000' and (sum(spend)*0.07) < '8000' then '9500'
-           when sum(spend) >= '80000' and (sum(spend)*0.07) > '8000' then ((sum(spend)*0.07)+1500)
-      end as commission 
+      case when date(rc.day) <= '2024-08-31' and sum(spend) < '20000' then '2500'
+           when date(rc.day) <= '2024-08-31' and sum(spend) between '20000' and '30000' then '3000'
+           when date(rc.day) <= '2024-08-31' and sum(spend) between '30000' and '50000' then '3600'
+           when date(rc.day) <= '2024-08-31' and sum(spend) between '50000' and '80000' then '5000'
+           when date(rc.day) <= '2024-08-31' and sum(spend) > '80000' then '8000'           
+           when date(rc.day) > '2024-08-31' and sum(spend) < '19999' then '4000'
+           when date(rc.day) > '2024-08-31' and sum(spend) between '20000' and '29999' and (sum(spend)*0.115) < '3000' then '4500'
+           when date(rc.day) > '2024-08-31' and sum(spend) between '20000' and '29999' and (sum(spend)*0.115) > '3000' then ((sum(spend)*0.115)+1500)    
+           when date(rc.day) > '2024-08-31' and sum(spend) between '30000' and '49999' and (sum(spend)*0.105) < '3600' then '5100' 
+           when date(rc.day) > '2024-08-31' and sum(spend) between '30000' and '49999' and (sum(spend)*0.105) > '3600' then ((sum(spend)*0.105)+1500)
+           when date(rc.day) > '2024-08-31' and sum(spend) between '50000' and '79999' and (sum(spend)*0.09) < '5000' then '6500'
+           when date(rc.day) > '2024-08-31' and sum(spend) between '50000' and '79999' and (sum(spend)*0.09) > '5000' then ((sum(spend)*0.09)+1500)
+           when date(rc.day) > '2024-08-31' and sum(spend) >= '80000' and (sum(spend)*0.07) < '8000' then '9500'
+           when date(rc.day) > '2024-08-31' and sum(spend) >= '80000' and (sum(spend)*0.07) > '8000' then ((sum(spend)*0.07)+1500)
+     end as commission 
     from intl.recruitics_spend_intl rc
-    where year(rc.day) >= year(now())-2 
+    where year(rc.day) >= year(now())-2
       and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
-    group by 1,2,3,4,5,6,7) rc_fee
+    group by 1,2,3,4,5,6,7,rc.day) rc_fee
 join reporting.DW_D_DATE d on rc_fee.year = d.year and rc_fee.month = d.month and d.year >= year(now())-2 and d.date < date(current_date)
 group by 1,2,3,4,5,6,7,8,9,10
