@@ -1,0 +1,87 @@
+select distinct  
+  month(spend_date) as month, 
+  (   SUM(DE_OTHER_ONLINE) + 
+      SUM(DE_TV) + 
+      SUM(DE_PROVIDER) + 
+      SUM(AT_OTHER_ONLINE) + 
+      SUM(AT_TV) + 
+      SUM(AT_PROVIDER) + 
+      SUM(CH_OTHER_ONLINE) + 
+      SUM(CH_TV) + 
+      SUM(CH_PROVIDER) + 
+      SUM(BE_OTHER_ONLINE) + 
+      SUM(BE_TV) + 
+      SUM(BE_PROVIDER) + 
+      SUM(FB_OTHER_ONLINE) + 
+      SUM(FB_TV) + 
+      SUM(FB_PROVIDER) + 
+      SUM(DK_OTHER_ONLINE) + 
+      SUM(DK_TV) + 
+      SUM(DK_PROVIDER) + 
+      SUM(FI_OTHER_ONLINE) + 
+      SUM(FI_TV) + 
+      SUM(FI_PROVIDER) + 
+      SUM(NL_OTHER_ONLINE) + 
+      SUM(NL_TV) + 
+      SUM(NL_PROVIDER) + 
+      SUM(SE_OTHER_ONLINE) + 
+      SUM(SE_TV) + 
+      SUM(SE_PROVIDER) + 
+      SUM(IE_OTHER_ONLINE) + 
+      SUM(IE_TV) + 
+      SUM(IE_PROVIDER) + 
+      SUM(AU_OTHER_ONLINE) + 
+      SUM(AU_TV) + 
+      SUM(AU_PROVIDER) + 
+      SUM(NO_OTHER_ONLINE) + 
+      SUM(NO_TV) + 
+      SUM(NO_PROVIDER) + 
+      SUM(NZ_OTHER_ONLINE) + 
+      SUM(NZ_TV) + 
+      SUM(NZ_PROVIDER) + 
+      SUM(UK_OTHER_ONLINE) + 
+      SUM(UK_TV) + 
+      SUM(UK_PROVIDER) + 
+      SUM(CA_OTHER_ONLINE) + 
+      SUM(CA_TV) + 
+      SUM(CA_PROVIDER) + 
+      SUM(ES_OTHER_ONLINE) + 
+      SUM(ES_TV) + 
+      SUM(ES_PROVIDER) + 
+      SUM(FR_OTHER_ONLINE) + 
+      SUM(FR_TV) + 
+      SUM(FR_PROVIDER) + 
+      SUM(DE_Provider_Myperfectjob) + 
+      SUM(DE_Seeker_Nebenan) + 
+      SUM(DE_Provider_Nebenan) + 
+      SUM(DE_Seeker_Mibaby) + 
+      SUM(DE_Provider_Mibaby) + 
+      SUM(DE_Provider_AppCast) + 
+      SUM(UK_Provider_AppCast) + 
+      SUM(DE_Seeker_Pinterest) + 
+      SUM(UK_Seeker_Pinterest) + 
+      SUM(CA_Seeker_Pinterest) + 
+      SUM(AU_Seeker_Pinterest) + 
+      SUM(AT_PROVIDER_ALLESKRALLE) + 
+      SUM(CH_PROVIDER_ALLESKRALLE) + 
+      SUM(DE_PROVIDER_ALLESKRALLE) + 
+      SUM(DE_PROVIDER_JOBLIFT) + 
+      SUM(DE_SEEKER_SPOTIFY) + 
+      SUM(AT_Seeker_Microsoft) + 
+      SUM(AU_Seeker_Microsoft) + 
+      SUM(BE_Seeker_Microsoft) + 
+      SUM(CA_Seeker_Microsoft) + 
+      SUM(CH_Seeker_Microsoft) + 
+      SUM(DE_Seeker_Microsoft) + 
+      SUM(DK_Seeker_Microsoft) + 
+      SUM(FI_Seeker_Microsoft) + 
+      SUM(IE_Seeker_Microsoft) + 
+      SUM(NL_Seeker_Microsoft) + 
+      SUM(NO_Seeker_Microsoft) + 
+      SUM(NZ_Seeker_Microsoft) + 
+      SUM(SE_Seeker_Microsoft) + 
+      SUM(UK_Seeker_Microsoft) ) as spend
+
+from intl.DW_MARKETING_SPEND_INTL
+where year(spend_date) = 2024
+group by 1 order by 1 asc
