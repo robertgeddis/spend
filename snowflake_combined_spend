@@ -226,7 +226,7 @@ union
 -- Recruitics Fee
 select 
     d.date,
-    'Recrutics Fee' as channel, 
+    'Recruitics Fee' as channel, 
     'Provider' as role,
     'DE' as country, 
     currency,
