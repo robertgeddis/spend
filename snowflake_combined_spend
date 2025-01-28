@@ -1,10 +1,6 @@
-/*
-NOTES
+/* NOTES
 -- Ask Basar to add in flyers to SnowFlake manual spend table
--- Use new Bing table for 2025 spend and check if available in SEM spend table for 2023 and earlier
--- Combine all the manual spend table queries into one
-*/
-
+-- Use new Bing table for 2025 spend and check if available in SEM spend table for 2023 and earlier */
 
 with spend as (
 
