@@ -7,10 +7,10 @@ with spend as (
 -- Google SEM / GDN / YouTube
 select distinct 
     date(date) as date,
-    case when source_type <> 'GDN' and source <> 'YT' then 'SEM' 
-          when source_type = 'GDN' then 'GDN'
-          when source = 'YT' then 'YouTube'
-      end as channel,
+    case when source = 'Google' and source_type <> 'GDN' then 'SEM'
+         when source = 'Google' and source_type = 'GDN' then 'GDN'
+         when source = 'MSN' then 'Bing'
+         when source = 'YT' then 'YouTube' end as channel,
     initcap(campaign_type) as role,  
     upper(country) as country, 
     currency,
@@ -39,6 +39,7 @@ group by 1,2,3,4,5
 
 union
 
+-- Manual Spend File
 select distinct
     date(spend_date) as date,
     channel,
