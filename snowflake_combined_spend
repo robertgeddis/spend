@@ -30,7 +30,7 @@ select distinct
     initcap(campaign_Type) as role,
     case when upper(country) = 'EN' then 'CA' 
          when upper(country) = '_'  then 'AU' 
-         when upper(country) in ('VE', 'PO')  then 'DE' 
+         when upper(country) in ('VE', 'PO', 'IN')  then 'DE' 
       else upper(country) end as country, 
     currency,
     sum(spend) as spend
@@ -43,7 +43,9 @@ union
 select distinct
     date(spend_date) as date,
     channel,
-    member_type as role,
+    case when member_type = 'Providder' then 'Provider'
+         when channel = 'Appcast' then 'Provider' 
+    else member_type end as role,
     country_code as country,
     'EUR' as currency,
     sum(spend) as spend
@@ -94,6 +96,7 @@ select distinct
 from PRD_DB_CARE_DATA_MARTS.DM_INTL.V_QUALITY_CLICK_SPEND
 where partnerid<>435
 group by 1,2,3,4,5
+having sum(commission) > 0
 
 union
 
@@ -246,53 +249,43 @@ select
     'Provider' as role,
     'DE' as country, 
     currency,
-    sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month 
-        then ((commission)/current_days) else ((commission)/days_in_month) end) as spend
-from
-    (select distinct
-      year(day) as year,
-      month(day) as month,
-      month(current_date()-1) as current_month,
-      year(current_date()-1) as current_year,
-      date_part('day', last_day(day)) as days_in_month,
-      date_part('day', current_date()-1) as current_days,
-      currency,
-      case when sum(spend) < '20000' then cast('2500' as int)
-           when sum(spend) between '20000' and '30000' then cast('3000' as int)
-           when sum(spend) between '30000' and '50000' then cast('3600' as int)
-           when sum(spend) between '50000' and '80000' then cast('5000' as int)
-           when sum(spend) > '80000' then cast('8000' as int)                
-     end as commission 
+    sum(case when rc_fee.year = rc_fee.current_year and rc_fee.month = rc_fee.current_month then (commission / current_days) 
+            else (commission / days_in_month) end) as spend
+from (
+    select distinct
+        year(day) as year,
+        month(day) as month,
+        month(CURRENT_DATE - 1) as current_month,
+        year(CURRENT_DATE - 1) as current_year,
+        date_part('day', last_day(day)) as days_in_month,
+        date_part('day', CURRENT_DATE - 1) as current_days,
+        currency,
+        case 
+            -- Before 2024-08-31 Commission Rules
+            when date(day) <= '2024-08-31' and SUM(spend) < 20000 then 2500
+            when date(day) <= '2024-08-31' and SUM(spend) between 20000 and 29999 then 3000
+            when date(day) <= '2024-08-31' and SUM(spend) between 30000 and 49999 then 3600
+            when date(day) <= '2024-08-31' and SUM(spend) between 50000 and 79999 then 5000
+            when date(day) <= '2024-08-31' and SUM(spend) >= 80000 then 8000
+            -- After 2024-08-31 Commission Rules
+            when date(day) > '2024-08-31' and SUM(spend) < 19999 then 4000
+            when date(day) > '2024-08-31' and SUM(spend) between 20000 and 29999 and SUM(spend) * 0.115 < 3000 then 4500
+            when date(day) > '2024-08-31' and SUM(spend) between 20000 and 29999 then (SUM(spend) * 0.115) + 1500
+            when date(day) > '2024-08-31' and SUM(spend) between 30000 and 49999 and SUM(spend) * 0.105 < 3600 then 5100
+            when date(day) > '2024-08-31' and SUM(spend) between 30000 and 49999 then (SUM(spend) * 0.105) + 1500
+            when date(day) > '2024-08-31' and SUM(spend) between 50000 and 79999 and SUM(spend) * 0.09 < 5000 then 6500
+            when date(day) > '2024-08-31' and SUM(spend) between 50000 and 79999 then (SUM(spend) * 0.09) + 1500
+            when date(day) > '2024-08-31' and SUM(spend) >= 80000 and SUM(spend) * 0.07 < 8000 then 9500
+            when date(day) > '2024-08-31' and SUM(spend) >= 80000 then (SUM(spend) * 0.07) + 1500
+        end as commission
     from PRD_DB_CARE_DATA_MARTS.DM_INTL.RECRUITICS_SPEND_INTL 
-    where date(day) <= '2024-08-31'
-      and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
-    group by 1,2,3,4,5,6,7 
-
-union
-
-select distinct
-  year(day) as year,
-  month(day) as month,
-  month(current_date()-1) as current_month,
-  year(current_date()-1) as current_year,
-  date_part('day', last_day(day)) as days_in_month,
-  date_part('day', current_date()-1) as current_days,
-  currency,
-  case when sum(spend) < '19999' then cast('4000' as int)
-       when sum(spend) between '20000' and '29999' and (sum(spend)*0.115) < '3000' then cast('4500' as int)
-       when sum(spend) between '20000' and '29999' and (sum(spend)*0.115) > '3000' then ((sum(spend)*0.115)+1500)    
-       when sum(spend) between '30000' and '49999' and (sum(spend)*0.105) < '3600' then cast('5100' as int) 
-       when sum(spend) between '30000' and '49999' and (sum(spend)*0.105) > '3600' then ((sum(spend)*0.105)+1500)
-       when sum(spend) between '50000' and '79999' and (sum(spend)*0.09) < '5000' then cast('6500' as int)
-       when sum(spend) between '50000' and '79999' and (sum(spend)*0.09) > '5000' then ((sum(spend)*0.09)+1500)
-       when sum(spend) >= '80000' and (sum(spend)*0.07) < '8000' then cast('9500' as int)
-       when sum(spend) >= '80000' and (sum(spend)*0.07) > '8000' then ((sum(spend)*0.07)+1500)
-    end as commission 
-from PRD_DB_CARE_DATA_MARTS.DM_INTL.RECRUITICS_SPEND_INTL
-where date(day) > '2024-08-31'
-  and lower(source) not in ('xxx','jobg8','jobg8auto','jobtome')
-group by 1,2,3,4,5,6,7) rc_fee
-join PRD_DB_CARE_DATA_MARTS.RPT_REPORTING.DW_D_DATE d on rc_fee.year = d.year and rc_fee.month = d.month 
+    where lower(source) not in ('xxx', 'jobg8', 'jobg8auto', 'jobtome')
+    group by 1, 2, 3, 4, 5, 6, 7, day
+    order by 1, 2
+) rc_fee
+join PRD_DB_CARE_DATA_MARTS.RPT_REPORTING.DW_D_DATE d 
+    on rc_fee.year = d.year 
+    and rc_fee.month = d.month 
 group by 1,2,3,4,5
 
 union
@@ -362,7 +355,7 @@ fx_rate as (
 )
 
 select distinct
-  dd.year, dd.month, dd.date,
+  dd.year, dd.date,
   sp.channel, sp.role, sp.country,
   coalesce(sp.currency,fx.currency) as currency, 
   fx.fx_rate,
@@ -376,4 +369,4 @@ from spend sp
 join PRD_DB_CARE_DATA_MARTS.RPT_REPORTING.DW_D_DATE dd  on sp.date = dd.date 
 left join fx_rate fx                                    on sp.currency = fx.currency
 
-group by 1,2,3,4,5,6,7,8 order by 1,2,3 desc
+group by 1,2,3,4,5,6,7 order by 1,2 desc
