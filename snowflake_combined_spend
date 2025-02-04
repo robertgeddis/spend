@@ -53,6 +53,21 @@ group by 1,2,3,4,5
   
 union
 
+select distinct 
+    date(date) as date,
+    'Bing' as channel,
+    case when lower(campaign_name) like 's_%' then 'Seeker' 
+         when lower(campaign_name) like 'p_%' then 'Provider' 
+        else 'Brand' end as role,
+    upper(country) as country,
+    currency,
+    sum(spend) as spend
+from PRD_DB_CARE_DATA_MARTS.STAGING.BINGADS_INTL_STG 
+where year(date) >= '2025'
+group by 1,2,3,4,5
+
+union
+
 -- Quality Click
 select distinct
     date(day) as date,
