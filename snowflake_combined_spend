@@ -284,8 +284,7 @@ from (
     order by 1, 2
 ) rc_fee
 join PRD_DB_CARE_DATA_MARTS.RPT_REPORTING.DW_D_DATE d 
-    on rc_fee.year = d.year 
-    and rc_fee.month = d.month 
+    on rc_fee.year = d.year and rc_fee.month = d.month and d.date < date(current_date)
 group by 1,2,3,4,5
 
 union
